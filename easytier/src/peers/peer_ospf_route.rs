@@ -3,8 +3,8 @@ use std::{
     fmt::Debug,
     net::Ipv4Addr,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
         Arc, Weak,
+        atomic::{AtomicBool, AtomicU32, Ordering},
     },
     time::{Duration, Instant, SystemTime},
 };
@@ -12,9 +12,9 @@ use std::{
 use crossbeam::atomic::AtomicCell;
 use dashmap::DashMap;
 use petgraph::{
+    Directed, Graph,
     algo::{all_simple_paths, astar, dijkstra},
     graph::NodeIndex,
-    Directed, Graph,
 };
 use prost::Message;
 use prost_reflect::{DynamicMessage, ReflectMessage};
@@ -27,17 +27,17 @@ use tokio::{
 
 use crate::{
     common::{
-        config::NetworkIdentity, constants::EASYTIER_VERSION, global_ctx::ArcGlobalCtx,
-        stun::StunInfoCollectorTrait, PeerId,
+        PeerId, config::NetworkIdentity, constants::EASYTIER_VERSION, global_ctx::ArcGlobalCtx,
+        stun::StunInfoCollectorTrait,
     },
     peers::route_trait::{Route, RouteInterfaceBox},
     proto::{
         common::{Ipv4Inet, NatType, PeerFeatureFlag, StunInfo},
         peer_rpc::{
-            route_foreign_network_infos, ForeignNetworkRouteInfoEntry, ForeignNetworkRouteInfoKey,
-            OspfRouteRpc, OspfRouteRpcClientFactory, OspfRouteRpcServer, PeerIdVersion,
-            RouteForeignNetworkInfos, RoutePeerInfo, RoutePeerInfos, SyncRouteInfoError,
-            SyncRouteInfoRequest, SyncRouteInfoResponse,
+            ForeignNetworkRouteInfoEntry, ForeignNetworkRouteInfoKey, OspfRouteRpc,
+            OspfRouteRpcClientFactory, OspfRouteRpcServer, PeerIdVersion, RouteForeignNetworkInfos,
+            RoutePeerInfo, RoutePeerInfos, SyncRouteInfoError, SyncRouteInfoRequest,
+            SyncRouteInfoResponse, route_foreign_network_infos,
         },
         rpc_types::{
             self,
@@ -48,12 +48,12 @@ use crate::{
 };
 
 use super::{
+    PeerPacketFilter,
     peer_rpc::PeerRpcManager,
     route_trait::{
         DefaultRouteCostCalculator, ForeignNetworkRouteInfoMap, NextHopPolicy, RouteCostCalculator,
         RouteCostCalculatorInterface,
     },
-    PeerPacketFilter,
 };
 
 static SERVICE_ID: u32 = 7;
@@ -519,28 +519,33 @@ impl SyncedRouteInfo {
             .filter(|x| x.key().peer_id == my_peer_id)
         {
             let (key, entry) = item.pair_mut();
-            match foreign_networks.get_mut(key) { Some(mut new_entry) => {
-                assert!(!new_entry.foreign_peer_ids.is_empty());
-                if let Some(is_newer) = is_foreign_network_info_newer(&new_entry, entry) {
-                    let need_renew = is_newer
-                        || now
-                            .duration_since(entry.last_update.unwrap().try_into().unwrap())
-                            .unwrap()
-                            > UPDATE_PEER_INFO_PERIOD;
-                    if need_renew {
-                        new_entry.version = std::cmp::max(new_entry.version + 1, now_version);
-                        *entry = new_entry.clone();
+            match foreign_networks.get_mut(key) {
+                Some(mut new_entry) => {
+                    assert!(!new_entry.foreign_peer_ids.is_empty());
+                    if let Some(is_newer) = is_foreign_network_info_newer(&new_entry, entry) {
+                        let need_renew = is_newer
+                            || now
+                                .duration_since(entry.last_update.unwrap().try_into().unwrap())
+                                .unwrap()
+                                > UPDATE_PEER_INFO_PERIOD;
+                        if need_renew {
+                            new_entry.version = std::cmp::max(new_entry.version + 1, now_version);
+                            *entry = new_entry.clone();
+                            updated = true;
+                        }
+                    }
+                    drop(new_entry);
+                    foreign_networks.remove(key).unwrap();
+                }
+                _ => {
+                    if !item.foreign_peer_ids.is_empty() {
+                        item.foreign_peer_ids.clear();
+                        item.last_update = Some(SystemTime::now().into());
+                        item.version = std::cmp::max(item.version + 1, now_version);
                         updated = true;
                     }
                 }
-                drop(new_entry);
-                foreign_networks.remove(key).unwrap();
-            } _ => if !item.foreign_peer_ids.is_empty() {
-                item.foreign_peer_ids.clear();
-                item.last_update = Some(SystemTime::now().into());
-                item.version = std::cmp::max(item.version + 1, now_version);
-                updated = true;
-            }}
+            }
         }
 
         for item in foreign_networks.iter() {
@@ -1416,13 +1421,16 @@ impl PeerRouteServiceImpl {
         if let Some(peer_infos) = peer_infos {
             let mut peer_info_raws = Vec::new();
             for peer_info in peer_infos.iter() {
-                match raw_peer_infos.get(&peer_info.peer_id) { Some(info) => {
-                    peer_info_raws.push(Value::Message(info.clone()));
-                } _ => {
-                    let mut p = DynamicMessage::new(RoutePeerInfo::default().descriptor());
-                    p.transcode_from(peer_info).unwrap();
-                    peer_info_raws.push(Value::Message(p));
-                }}
+                match raw_peer_infos.get(&peer_info.peer_id) {
+                    Some(info) => {
+                        peer_info_raws.push(Value::Message(info.clone()));
+                    }
+                    _ => {
+                        let mut p = DynamicMessage::new(RoutePeerInfo::default().descriptor());
+                        p.transcode_from(peer_info).unwrap();
+                        peer_info_raws.push(Value::Message(p));
+                    }
+                }
             }
 
             let mut peer_infos = DynamicMessage::new(RoutePeerInfos::default().descriptor());
@@ -1459,8 +1467,16 @@ impl PeerRouteServiceImpl {
             return true;
         }
 
-        tracing::debug!(?foreign_network, "sync_route request need send to peer. my_id {:?}, pper_id: {:?}, peer_infos: {:?}, conn_bitmap: {:?}, synced_route_info: {:?} session: {:?}",
-                       my_peer_id, dst_peer_id, peer_infos, conn_bitmap, self.synced_route_info, session);
+        tracing::debug!(
+            ?foreign_network,
+            "sync_route request need send to peer. my_id {:?}, pper_id: {:?}, peer_infos: {:?}, conn_bitmap: {:?}, synced_route_info: {:?} session: {:?}",
+            my_peer_id,
+            dst_peer_id,
+            peer_infos,
+            conn_bitmap,
+            self.synced_route_info,
+            session
+        );
 
         session
             .need_sync_initiator_info
@@ -1913,7 +1929,14 @@ impl RouteSessionManager {
 
         tracing::info!(
             "handling sync_route_info rpc: from_peer_id: {:?}, is_initiator: {:?}, peer_infos: {:?}, conn_bitmap: {:?}, synced_route_info: {:?} session: {:?}, new_route_table: {:?}",
-            from_peer_id, is_initiator, peer_infos, conn_bitmap, service_impl.synced_route_info, session, service_impl.route_table);
+            from_peer_id,
+            is_initiator,
+            peer_infos,
+            conn_bitmap,
+            service_impl.synced_route_info,
+            session,
+            service_impl.route_table
+        );
 
         session
             .dst_is_initiator
@@ -2202,7 +2225,7 @@ impl PeerPacketFilter for Arc<PeerRoute> {}
 mod tests {
     use std::{
         collections::BTreeSet,
-        sync::{atomic::Ordering, Arc},
+        sync::{Arc, atomic::Ordering},
         time::Duration,
     };
 
@@ -2210,7 +2233,7 @@ mod tests {
     use prost_reflect::{DynamicMessage, ReflectMessage};
 
     use crate::{
-        common::{global_ctx::tests::get_mock_global_ctx, PeerId},
+        common::{PeerId, global_ctx::tests::get_mock_global_ctx},
         connector::udp_hole_punch::tests::replace_stun_info_collector,
         peers::{
             create_packet_recv_chan,

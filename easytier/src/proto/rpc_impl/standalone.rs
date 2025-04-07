@@ -1,5 +1,5 @@
 use std::{
-    sync::{atomic::AtomicU32, Arc, Mutex},
+    sync::{Arc, Mutex, atomic::AtomicU32},
     time::Duration,
 };
 

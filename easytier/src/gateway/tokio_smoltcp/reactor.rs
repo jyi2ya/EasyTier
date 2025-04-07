@@ -2,7 +2,7 @@ use super::{
     device::{BufferDevice, Packet},
     socket_allocator::{BufferSize, SocketAlloctor},
 };
-use futures::{stream::iter, FutureExt, SinkExt, StreamExt};
+use futures::{FutureExt, SinkExt, StreamExt, stream::iter};
 use parking_lot::{MappedMutexGuard, Mutex, MutexGuard};
 use smoltcp::{
     iface::{Context, Interface, SocketHandle},

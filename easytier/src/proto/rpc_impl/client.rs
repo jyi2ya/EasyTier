@@ -224,11 +224,10 @@ impl Client {
                 };
 
                 let rpc_req = RpcRequest {
-                    request: match ctrl.get_raw_input() { Some(raw_input) => {
-                        raw_input.into()
-                    } _ => {
-                        input.into()
-                    }},
+                    request: match ctrl.get_raw_input() {
+                        Some(raw_input) => raw_input.into(),
+                        _ => input.into(),
+                    },
                     timeout_ms: ctrl.timeout_ms(),
                     ..Default::default()
                 };

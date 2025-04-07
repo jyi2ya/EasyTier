@@ -19,28 +19,28 @@ use crate::{
             util::stream::tcp_connect_with_timeout,
         },
         ip_reassembler::IpReassembler,
-        tokio_smoltcp::{channel_device, Net, NetConfig},
+        tokio_smoltcp::{Net, NetConfig, channel_device},
     },
     tunnel::packet_def::{PacketType, ZCPacket},
 };
 use anyhow::Context;
 use dashmap::DashMap;
 use pnet::packet::{
-    ip::IpNextHeaderProtocols, ipv4::Ipv4Packet, tcp::TcpPacket, udp::UdpPacket, Packet,
+    Packet, ip::IpNextHeaderProtocols, ipv4::Ipv4Packet, tcp::TcpPacket, udp::UdpPacket,
 };
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::TcpListener,
     net::UdpSocket,
     select,
-    sync::{mpsc, Mutex},
+    sync::{Mutex, mpsc},
     task::JoinSet,
     time::timeout,
 };
 
 use crate::{
     common::{error::Error, global_ctx::GlobalCtx},
-    peers::{peer_manager::PeerManager, PeerPacketFilter},
+    peers::{PeerPacketFilter, peer_manager::PeerManager},
 };
 
 enum SocksUdpSocket {
@@ -76,12 +76,8 @@ impl AsyncRead for SocksTcpStream {
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_read(cx, buf)
-            }
-            SocksTcpStream::SmolTcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_read(cx, buf)
-            }
+            SocksTcpStream::TcpStream(stream) => std::pin::Pin::new(stream).poll_read(cx, buf),
+            SocksTcpStream::SmolTcpStream(stream) => std::pin::Pin::new(stream).poll_read(cx, buf),
         }
     }
 }
@@ -93,12 +89,8 @@ impl AsyncWrite for SocksTcpStream {
         buf: &[u8],
     ) -> std::task::Poll<Result<usize, std::io::Error>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_write(cx, buf)
-            }
-            SocksTcpStream::SmolTcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_write(cx, buf)
-            }
+            SocksTcpStream::TcpStream(stream) => std::pin::Pin::new(stream).poll_write(cx, buf),
+            SocksTcpStream::SmolTcpStream(stream) => std::pin::Pin::new(stream).poll_write(cx, buf),
         }
     }
 
@@ -108,9 +100,7 @@ impl AsyncWrite for SocksTcpStream {
     ) -> std::task::Poll<Result<(), std::io::Error>> {
         match self.get_mut() {
             SocksTcpStream::TcpStream(stream) => std::pin::Pin::new(stream).poll_flush(cx),
-            SocksTcpStream::SmolTcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_flush(cx)
-            }
+            SocksTcpStream::SmolTcpStream(stream) => std::pin::Pin::new(stream).poll_flush(cx),
         }
     }
 
@@ -119,12 +109,8 @@ impl AsyncWrite for SocksTcpStream {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), std::io::Error>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_shutdown(cx)
-            }
-            SocksTcpStream::SmolTcpStream(stream) => {
-                std::pin::Pin::new(stream).poll_shutdown(cx)
-            }
+            SocksTcpStream::TcpStream(stream) => std::pin::Pin::new(stream).poll_shutdown(cx),
+            SocksTcpStream::SmolTcpStream(stream) => std::pin::Pin::new(stream).poll_shutdown(cx),
         }
     }
 }
@@ -555,7 +541,8 @@ impl Socks5Server {
             Ok((from_client, from_server)) => {
                 tracing::info!(
                     "port forward connection finished: client->server: {} bytes, server->client: {} bytes",
-                    from_client, from_server
+                    from_client,
+                    from_server
                 );
             }
             Err(e) => {

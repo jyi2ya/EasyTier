@@ -1,26 +1,26 @@
 use std::{
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc,
+        atomic::{AtomicU32, Ordering},
     },
     time::Duration,
 };
 
-use rand::{thread_rng, Rng};
+use rand::{Rng, thread_rng};
 use tokio::{
     sync::broadcast,
     task::JoinSet,
-    time::{timeout, Interval},
+    time::{Interval, timeout},
 };
 use tracing::Instrument;
 
 use crate::{
-    common::{error::Error, PeerId},
+    common::{PeerId, error::Error},
     tunnel::{
+        TunnelError,
         mpsc::MpscTunnelSender,
         packet_def::{PacketType, ZCPacket},
         stats::{Throughput, WindowLatency},
-        TunnelError,
     },
 };
 
@@ -255,7 +255,7 @@ impl PeerConnPinger {
                         "pingpong controller send pingpong task, seq: {}, node_id: {}, controller: {:?}",
                         req_seq,
                         my_node_id,
-                        controller  
+                        controller
                     );
 
                     let mut sink = sink.clone();

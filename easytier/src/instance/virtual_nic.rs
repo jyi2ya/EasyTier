@@ -12,17 +12,17 @@ use crate::{
         global_ctx::{ArcGlobalCtx, GlobalCtxEvent},
         ifcfg::{IfConfiger, IfConfiguerTrait},
     },
-    peers::{peer_manager::PeerManager, recv_packet_from_chan, PacketRecvChanReceiver},
+    peers::{PacketRecvChanReceiver, peer_manager::PeerManager, recv_packet_from_chan},
     tunnel::{
-        common::{reserve_buf, FramedWriter, TunnelWrapper, ZCPacketToBytes},
-        packet_def::{ZCPacket, ZCPacketType, TAIL_RESERVED_SIZE},
         StreamItem, Tunnel, TunnelError, ZCPacketSink, ZCPacketStream,
+        common::{FramedWriter, TunnelWrapper, ZCPacketToBytes, reserve_buf},
+        packet_def::{TAIL_RESERVED_SIZE, ZCPacket, ZCPacketType},
     },
 };
 
 use byteorder::WriteBytesExt as _;
 use bytes::{BufMut, BytesMut};
-use futures::{lock::BiLock, ready, SinkExt, Stream, StreamExt};
+use futures::{SinkExt, Stream, StreamExt, lock::BiLock, ready};
 use pin_project_lite::pin_project;
 use pnet::packet::ipv4::Ipv4Packet;
 use tokio::{
@@ -245,7 +245,7 @@ pub struct VirtualNic {
 
 #[cfg(target_os = "windows")]
 pub fn checkreg(dev_name: &str) -> io::Result<()> {
-    use winreg::{enums::HKEY_LOCAL_MACHINE, enums::KEY_ALL_ACCESS, RegKey};
+    use winreg::{RegKey, enums::HKEY_LOCAL_MACHINE, enums::KEY_ALL_ACCESS};
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let profiles_key = hklm.open_subkey_with_flags(
         "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\Profiles",
@@ -352,8 +352,13 @@ impl VirtualNic {
             match crate::arch::windows::add_self_to_firewall_allowlist() {
                 Ok(_) => tracing::info!("add_self_to_firewall_allowlist successful!"),
                 Err(e) => {
-                    println!("Failed to add Easytier to firewall allowlist, Subnet proxy and KCP proxy may not work properly. error: {}", e);
-                    println!("You can add firewall rules manually, or use --use-smoltcp to run with user-space TCP/IP stack.");
+                    println!(
+                        "Failed to add Easytier to firewall allowlist, Subnet proxy and KCP proxy may not work properly. error: {}",
+                        e
+                    );
+                    println!(
+                        "You can add firewall rules manually, or use --use-smoltcp to run with user-space TCP/IP stack."
+                    );
                     println!("");
                 }
             }
@@ -502,7 +507,7 @@ impl VirtualNic {
 
 #[cfg(target_os = "windows")]
 pub fn reg_change_catrgory_in_profile(dev_name: &str) -> io::Result<()> {
-    use winreg::{enums::HKEY_LOCAL_MACHINE, enums::KEY_ALL_ACCESS, RegKey};
+    use winreg::{RegKey, enums::HKEY_LOCAL_MACHINE, enums::KEY_ALL_ACCESS};
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let profiles_key = hklm.open_subkey_with_flags(
         "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\Profiles",

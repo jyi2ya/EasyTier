@@ -6,16 +6,16 @@ use crate::{
         global_ctx::ArcGlobalCtx,
         stun::{get_default_resolver_config, resolve_txt_record},
     },
-    tunnel::{IpVersion, Tunnel, TunnelConnector, TunnelError, PROTO_PORT_OFFSET},
+    tunnel::{IpVersion, PROTO_PORT_OFFSET, Tunnel, TunnelConnector, TunnelError},
 };
 use anyhow::Context;
 use dashmap::DashSet;
 use hickory_resolver::{
+    TokioAsyncResolver,
     config::{ResolverConfig, ResolverOpts},
     proto::rr::rdata::SRV,
-    TokioAsyncResolver,
 };
-use rand::{seq::SliceRandom, Rng as _};
+use rand::{Rng as _, seq::SliceRandom};
 
 use crate::proto::common::TunnelInfo;
 

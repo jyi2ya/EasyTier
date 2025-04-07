@@ -28,7 +28,7 @@ use crate::{
     },
 };
 
-use super::{server::PeerCenterServer, Digest, Error};
+use super::{Digest, Error, server::PeerCenterServer};
 
 struct PeerCenterBase {
     peer_mgr: Arc<PeerManager>,
@@ -83,13 +83,15 @@ impl PeerCenterBase {
     >(
         &self,
         job_ctx: T,
-        job_fn: (impl Fn(
-            Box<dyn PeerCenterRpc<Controller = BaseController> + Send>,
-            Arc<PeridicJobCtx<T>>,
-        ) -> Fut
-             + Send
-             + Sync
-             + 'static),
+        job_fn: (
+            impl Fn(
+                Box<dyn PeerCenterRpc<Controller = BaseController> + Send>,
+                Arc<PeridicJobCtx<T>>,
+            ) -> Fut
+            + Send
+            + Sync
+            + 'static
+        ),
     ) -> () {
         let my_peer_id = self.peer_mgr.my_peer_id();
         let peer_mgr = self.peer_mgr.clone();

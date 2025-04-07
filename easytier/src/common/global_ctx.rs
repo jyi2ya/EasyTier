@@ -9,11 +9,11 @@ use crate::proto::common::{PeerFeatureFlag, PortForwardConfigPb};
 use crossbeam::atomic::AtomicCell;
 
 use super::{
+    PeerId,
     config::{ConfigLoader, Flags},
     netns::NetNS,
     network::IPCollector,
     stun::{StunInfoCollector, StunInfoCollectorTrait},
-    PeerId,
 };
 
 pub type NetworkIdentity = crate::common::config::NetworkIdentity;

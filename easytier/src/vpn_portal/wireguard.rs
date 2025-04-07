@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
-use base64::{prelude::BASE64_STANDARD, Engine};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use cidr::Ipv4Inet;
 use dashmap::DashMap;
 use futures::StreamExt;
@@ -18,12 +18,12 @@ use crate::{
         global_ctx::{ArcGlobalCtx, GlobalCtxEvent},
         join_joinset_background,
     },
-    peers::{peer_manager::PeerManager, PeerPacketFilter},
+    peers::{PeerPacketFilter, peer_manager::PeerManager},
     tunnel::{
+        Tunnel, TunnelListener,
         mpsc::{MpscTunnel, MpscTunnelSender},
         packet_def::{PacketType, ZCPacket, ZCPacketType},
         wireguard::{WgConfig, WgTunnelListener},
-        Tunnel, TunnelListener,
     },
 };
 

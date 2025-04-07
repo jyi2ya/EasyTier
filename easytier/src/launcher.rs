@@ -1,13 +1,13 @@
 use std::{
     collections::VecDeque,
-    sync::{atomic::AtomicBool, Arc, RwLock},
+    sync::{Arc, RwLock, atomic::AtomicBool},
 };
 
 use crate::{
     common::{
         config::{
-            gen_default_flags, ConfigLoader, NetworkIdentity, PeerConfig, TomlConfigLoader,
-            VpnPortalConfig,
+            ConfigLoader, NetworkIdentity, PeerConfig, TomlConfigLoader, VpnPortalConfig,
+            gen_default_flags,
         },
         constants::EASYTIER_VERSION,
         global_ctx::{EventBusSubscriber, GlobalCtxEvent},
@@ -15,7 +15,7 @@ use crate::{
     },
     instance::instance::Instance,
     peers::rpc_service::PeerManagerRpcService,
-    proto::cli::{list_peer_route_pair, PeerInfo, Route},
+    proto::cli::{PeerInfo, Route, list_peer_route_pair},
 };
 use anyhow::Context;
 use chrono::{DateTime, Local};
@@ -522,7 +522,8 @@ impl NetworkConfig {
             let mut routes = Vec::<cidr::Ipv4Cidr>::with_capacity(self.routes.len());
             for route in self.routes.iter() {
                 routes.push(
-                    route.parse()
+                    route
+                        .parse()
                         .with_context(|| format!("failed to parse route: {}", route))?,
                 );
             }
@@ -543,9 +544,7 @@ impl NetworkConfig {
         if self.enable_socks5.unwrap_or_default() {
             if let Some(socks5_port) = self.socks5_port {
                 cfg.set_socks5_portal(Some(
-                    format!("socks5://0.0.0.0:{}", socks5_port)
-                        .parse()
-                        .unwrap(),
+                    format!("socks5://0.0.0.0:{}", socks5_port).parse().unwrap(),
                 ));
             }
         }

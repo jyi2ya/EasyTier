@@ -7,10 +7,10 @@ use tokio::time::timeout;
 
 use crate::common::scoped_task::ScopedTask;
 
-use super::{packet_def::ZCPacket, Tunnel, TunnelError, ZCPacketSink, ZCPacketStream};
+use super::{Tunnel, TunnelError, ZCPacketSink, ZCPacketStream, packet_def::ZCPacket};
 
 // use tokio::sync::mpsc::{channel, error::TrySendError, Receiver, Sender};
-use tachyonix::{channel, Receiver, Sender, TrySendError};
+use tachyonix::{Receiver, Sender, TrySendError, channel};
 
 use futures::SinkExt;
 
@@ -140,9 +140,9 @@ mod tests {
     use futures::StreamExt;
 
     use crate::tunnel::{
-        ring::{create_ring_tunnel_pair, RING_TUNNEL_CAP},
-        tcp::{TcpTunnelConnector, TcpTunnelListener},
         TunnelConnector, TunnelListener,
+        ring::{RING_TUNNEL_CAP, create_ring_tunnel_pair},
+        tcp::{TcpTunnelConnector, TcpTunnelListener},
     };
 
     use super::*;

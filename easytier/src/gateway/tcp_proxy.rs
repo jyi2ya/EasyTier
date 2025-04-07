@@ -3,20 +3,20 @@ use cidr::Ipv4Inet;
 use core::panic;
 use crossbeam::atomic::AtomicCell;
 use dashmap::DashMap;
-use pnet::packet::ip::IpNextHeaderProtocols;
-use pnet::packet::ipv4::{Ipv4Packet, MutableIpv4Packet};
-use pnet::packet::tcp::{ipv4_checksum, MutableTcpPacket, TcpPacket};
 use pnet::packet::MutablePacket;
 use pnet::packet::Packet;
+use pnet::packet::ip::IpNextHeaderProtocols;
+use pnet::packet::ipv4::{Ipv4Packet, MutableIpv4Packet};
+use pnet::packet::tcp::{MutableTcpPacket, TcpPacket, ipv4_checksum};
 use socket2::{SockRef, TcpKeepalive};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::atomic::{AtomicBool, AtomicU16};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
-use tokio::io::{copy_bidirectional, AsyncRead, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, copy_bidirectional};
 use tokio::net::{TcpListener, TcpSocket, TcpStream};
 use tokio::select;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tokio::task::JoinSet;
 use tokio::time::timeout;
 use tracing::Instrument;
@@ -38,7 +38,7 @@ use crate::tunnel::packet_def::{PacketType, PeerManagerHeader, ZCPacket};
 use super::CidrSet;
 
 #[cfg(feature = "smoltcp")]
-use super::tokio_smoltcp::{self, channel_device, Net, NetConfig};
+use super::tokio_smoltcp::{self, Net, NetConfig, channel_device};
 
 #[async_trait::async_trait]
 pub(crate) trait NatDstConnector: Send + Sync + Clone + 'static {
@@ -383,14 +383,15 @@ impl<C: NatDstConnector> NicPacketFilter for TcpProxy<C> {
         }
 
         tracing::trace!(dst_addr = ?dst_addr, "tcp packet try find entry");
-        let entry = match self.addr_conn_map.get(&dst_addr) { Some(entry) => {
-            entry
-        } _ => {
-            let Some(syn_entry) = self.syn_map.get(&dst_addr) else {
-                return false;
-            };
-            syn_entry
-        }};
+        let entry = match self.addr_conn_map.get(&dst_addr) {
+            Some(entry) => entry,
+            _ => {
+                let Some(syn_entry) = self.syn_map.get(&dst_addr) else {
+                    return false;
+                };
+                syn_entry
+            }
+        };
         let nat_entry = entry.clone();
         drop(entry);
         assert_eq!(nat_entry.src, dst_addr);

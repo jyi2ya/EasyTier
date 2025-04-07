@@ -3,7 +3,7 @@ use std::{net::Ipv4Addr, sync::Arc};
 use dashmap::DashMap;
 
 use crate::{
-    common::{global_ctx::NetworkIdentity, PeerId},
+    common::{PeerId, global_ctx::NetworkIdentity},
     proto::{
         common::PeerFeatureFlag,
         peer_rpc::{

@@ -6,19 +6,19 @@ use tokio::sync::RwLock;
 
 use crate::{
     common::{
+        PeerId,
         error::Error,
         global_ctx::{ArcGlobalCtx, GlobalCtxEvent, NetworkIdentity},
-        PeerId,
     },
     proto::{cli::PeerConnInfo, common::PeerFeatureFlag},
-    tunnel::{packet_def::ZCPacket, TunnelError},
+    tunnel::{TunnelError, packet_def::ZCPacket},
 };
 
 use super::{
+    PacketRecvChan,
     peer::Peer,
     peer_conn::{PeerConn, PeerConnId},
     route_trait::{ArcRoute, NextHopPolicy},
-    PacketRecvChan,
 };
 
 pub struct PeerMap {
@@ -205,11 +205,12 @@ impl PeerMap {
     }
 
     pub async fn list_peer_conns(&self, peer_id: PeerId) -> Option<Vec<PeerConnInfo>> {
-        match self.get_peer_by_id(peer_id) { Some(p) => {
-            Some(p.list_peer_conns().await)
-        } _ => {
-            return None;
-        }}
+        match self.get_peer_by_id(peer_id) {
+            Some(p) => Some(p.list_peer_conns().await),
+            _ => {
+                return None;
+            }
+        }
     }
 
     pub async fn get_peer_default_conn_id(&self, peer_id: PeerId) -> Option<PeerConnId> {
@@ -222,11 +223,12 @@ impl PeerMap {
         peer_id: PeerId,
         conn_id: &PeerConnId,
     ) -> Result<(), Error> {
-        match self.get_peer_by_id(peer_id) { Some(p) => {
-            p.close_peer_conn(conn_id).await
-        } _ => {
-            return Err(Error::NotFound);
-        }}
+        match self.get_peer_by_id(peer_id) {
+            Some(p) => p.close_peer_conn(conn_id).await,
+            _ => {
+                return Err(Error::NotFound);
+            }
+        }
     }
 
     pub async fn close_peer(&self, peer_id: PeerId) -> Result<(), TunnelError> {

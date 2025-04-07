@@ -14,24 +14,24 @@ use kcp_sys::{
     stream::KcpStream,
 };
 use pnet::packet::{
+    Packet as _,
     ip::IpNextHeaderProtocols,
     ipv4::Ipv4Packet,
     tcp::{TcpFlags, TcpPacket},
-    Packet as _,
 };
 use prost::Message;
 use tokio::{io::copy_bidirectional, task::JoinSet};
 
 use super::{
-    tcp_proxy::{NatDstConnector, NatDstTcpConnector, TcpProxy},
     CidrSet,
+    tcp_proxy::{NatDstConnector, NatDstTcpConnector, TcpProxy},
 };
 use crate::{
     common::{
         error::Result,
         global_ctx::{ArcGlobalCtx, GlobalCtx},
     },
-    peers::{peer_manager::PeerManager, NicPacketFilter, PeerPacketFilter},
+    peers::{NicPacketFilter, PeerPacketFilter, peer_manager::PeerManager},
     proto::{
         cli::{
             ListTcpProxyEntryRequest, ListTcpProxyEntryResponse, TcpProxyEntry, TcpProxyEntryState,

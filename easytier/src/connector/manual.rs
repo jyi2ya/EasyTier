@@ -3,7 +3,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use anyhow::Context;
 use dashmap::{DashMap, DashSet};
 use tokio::{
-    sync::{broadcast::Receiver, mpsc, Mutex},
+    sync::{Mutex, broadcast::Receiver, mpsc},
     task::JoinSet,
     time::timeout,
 };
@@ -252,16 +252,21 @@ impl ManualConnectorManager {
         let remove_later = DashSet::new();
         for it in data.removed_conn_urls.iter() {
             let url = it.key();
-            match data.connectors.remove(url) { Some(_) => {
-                tracing::warn!("connector: {}, removed", url);
-                continue;
-            } _ => if data.reconnecting.contains(url) {
-                tracing::warn!("connector: {}, reconnecting, remove later.", url);
-                remove_later.insert(url.clone());
-                continue;
-            } else {
-                tracing::warn!("connector: {}, not found", url);
-            }}
+            match data.connectors.remove(url) {
+                Some(_) => {
+                    tracing::warn!("connector: {}, removed", url);
+                    continue;
+                }
+                _ => {
+                    if data.reconnecting.contains(url) {
+                        tracing::warn!("connector: {}, reconnecting, remove later.", url);
+                        remove_later.insert(url.clone());
+                        continue;
+                    } else {
+                        tracing::warn!("connector: {}, not found", url);
+                    }
+                }
+            }
         }
         data.removed_conn_urls.clear();
         for it in remove_later.iter() {

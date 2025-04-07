@@ -2,7 +2,7 @@ use std::{
     fmt::{Debug, Formatter},
     net::SocketAddr,
     pin::Pin,
-    sync::{atomic::AtomicBool, Arc},
+    sync::{Arc, atomic::AtomicBool},
     time::Duration,
 };
 
@@ -10,13 +10,13 @@ use anyhow::Context;
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use boringtun::{
-    noise::{errors::WireGuardError, Tunn, TunnResult},
+    noise::{Tunn, TunnResult, errors::WireGuardError},
     x25519::{PublicKey, StaticSecret},
 };
 use bytes::BytesMut;
 use crossbeam::atomic::AtomicCell;
 use dashmap::DashMap;
-use futures::{stream::FuturesUnordered, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt, stream::FuturesUnordered};
 use rand::RngCore;
 use tokio::{net::UdpSocket, sync::Mutex, task::JoinSet};
 
@@ -24,16 +24,16 @@ use super::TunnelInfo;
 use crate::tunnel::{
     build_url_from_socket_addr,
     common::TunnelWrapper,
-    packet_def::{ZCPacket, WG_TUNNEL_HEADER_SIZE},
+    packet_def::{WG_TUNNEL_HEADER_SIZE, ZCPacket},
 };
 
 use super::{
+    IpVersion, Tunnel, TunnelError, TunnelListener, TunnelUrl, ZCPacketSink, ZCPacketStream,
     check_scheme_and_get_socket_addr,
     common::{setup_sokcet2, setup_sokcet2_ext, wait_for_connect_futures},
     generate_digest_from_str,
-    packet_def::{ZCPacketType, PEER_MANAGER_HEADER_SIZE},
+    packet_def::{PEER_MANAGER_HEADER_SIZE, ZCPacketType},
     ring::create_ring_tunnel_pair,
-    IpVersion, Tunnel, TunnelError, TunnelListener, TunnelUrl, ZCPacketSink, ZCPacketStream,
 };
 
 const MAX_PACKET: usize = 2048;
@@ -199,7 +199,10 @@ impl WgPeerData {
                 match self.udp.send_to(packet, self.endpoint).await {
                     Ok(_) => {}
                     Err(e) => {
-                        tracing::error!("Failed to send decapsulation-instructed packet to WireGuard endpoint: {:?}", e);
+                        tracing::error!(
+                            "Failed to send decapsulation-instructed packet to WireGuard endpoint: {:?}",
+                            e
+                        );
                         return;
                     }
                 };
@@ -211,7 +214,10 @@ impl WgPeerData {
                             match self.udp.send_to(packet, self.endpoint).await {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    tracing::error!("Failed to send decapsulation-instructed packet to WireGuard endpoint: {:?}", e);
+                                    tracing::error!(
+                                        "Failed to send decapsulation-instructed packet to WireGuard endpoint: {:?}",
+                                        e
+                                    );
                                     break;
                                 }
                             };
@@ -763,8 +769,8 @@ impl super::TunnelConnector for WgTunnelConnector {
 pub mod tests {
     use super::*;
     use crate::tunnel::{
-        common::tests::{_tunnel_bench, _tunnel_pingpong},
         TunnelConnector,
+        common::tests::{_tunnel_bench, _tunnel_pingpong},
     };
     use boringtun::*;
 

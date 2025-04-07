@@ -9,7 +9,7 @@ use std::{
 };
 
 use anyhow::Context;
-use clap::{command, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, command};
 use humansize::format_size;
 use service_manager::*;
 use tabled::settings::Style;
@@ -22,13 +22,13 @@ use easytier::{
     },
     proto::{
         cli::{
-            list_peer_route_pair, ConnectorManageRpc, ConnectorManageRpcClientFactory,
-            DumpRouteRequest, GetVpnPortalInfoRequest, ListConnectorRequest,
-            ListForeignNetworkRequest, ListGlobalForeignNetworkRequest, ListPeerRequest,
-            ListPeerResponse, ListRouteRequest, ListRouteResponse, NodeInfo, PeerManageRpc,
-            PeerManageRpcClientFactory, ShowNodeInfoRequest, TcpProxyEntryState,
-            TcpProxyEntryTransportType, TcpProxyRpc, TcpProxyRpcClientFactory, VpnPortalRpc,
-            VpnPortalRpcClientFactory,
+            ConnectorManageRpc, ConnectorManageRpcClientFactory, DumpRouteRequest,
+            GetVpnPortalInfoRequest, ListConnectorRequest, ListForeignNetworkRequest,
+            ListGlobalForeignNetworkRequest, ListPeerRequest, ListPeerResponse, ListRouteRequest,
+            ListRouteResponse, NodeInfo, PeerManageRpc, PeerManageRpcClientFactory,
+            ShowNodeInfoRequest, TcpProxyEntryState, TcpProxyEntryTransportType, TcpProxyRpc,
+            TcpProxyRpcClientFactory, VpnPortalRpc, VpnPortalRpcClientFactory,
+            list_peer_route_pair,
         },
         common::NatType,
         peer_rpc::{GetGlobalPeerMapRequest, PeerCenterRpc, PeerCenterRpcClientFactory},
@@ -36,7 +36,7 @@ use easytier::{
         rpc_types::controller::BaseController,
     },
     tunnel::tcp::TcpTunnelConnector,
-    utils::{cost_to_str, float_to_str, PeerRoutePair},
+    utils::{PeerRoutePair, cost_to_str, float_to_str},
 };
 
 rust_i18n::i18n!("locales", fallback = "en");
@@ -1238,7 +1238,7 @@ mod win_service_manager {
         ServiceStopCtx, ServiceUninstallCtx,
     };
 
-    use winreg::{enums::*, RegKey};
+    use winreg::{RegKey, enums::*};
 
     use easytier::common::constants::WIN_SERVICE_WORK_DIR_REG_KEY;
 

@@ -31,8 +31,8 @@ pub fn get_logger_timer<F: time::formatting::Formattable>(
     tracing_subscriber::fmt::time::OffsetTime::new(local_offset, format)
 }
 
-pub fn get_logger_timer_rfc3339(
-) -> tracing_subscriber::fmt::time::OffsetTime<time::format_description::well_known::Rfc3339> {
+pub fn get_logger_timer_rfc3339()
+-> tracing_subscriber::fmt::time::OffsetTime<time::format_description::well_known::Rfc3339> {
     get_logger_timer(time::format_description::well_known::Rfc3339)
 }
 

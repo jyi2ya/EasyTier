@@ -12,43 +12,43 @@ use dashmap::{DashMap, DashSet};
 
 use tokio::{
     sync::{
-        mpsc::{self, UnboundedReceiver, UnboundedSender},
         Mutex, RwLock,
+        mpsc::{self, UnboundedReceiver, UnboundedSender},
     },
     task::JoinSet,
 };
 
 use crate::{
     common::{
+        PeerId,
         compressor::{Compressor as _, DefaultCompressor},
         constants::EASYTIER_VERSION,
         error::Error,
         global_ctx::{ArcGlobalCtx, GlobalCtxEvent, NetworkIdentity},
         stun::StunInfoCollectorTrait,
-        PeerId,
     },
     peers::{
+        PeerPacketFilter,
         peer_conn::PeerConn,
         peer_rpc::PeerRpcManagerTransport,
         recv_packet_from_chan,
         route_trait::{ForeignNetworkRouteInfoMap, NextHopPolicy, RouteInterface},
-        PeerPacketFilter,
     },
     proto::{
         cli::{
-            self, list_global_foreign_network_response::OneForeignNetwork,
-            ListGlobalForeignNetworkResponse,
+            self, ListGlobalForeignNetworkResponse,
+            list_global_foreign_network_response::OneForeignNetwork,
         },
         peer_rpc::{ForeignNetworkRouteInfoEntry, ForeignNetworkRouteInfoKey},
     },
     tunnel::{
-        self,
+        self, Tunnel, TunnelConnector,
         packet_def::{CompressorAlgo, PacketType, ZCPacket},
-        Tunnel, TunnelConnector,
     },
 };
 
 use super::{
+    BoxNicPacketFilter, BoxPeerPacketFilter, PacketRecvChan, PacketRecvChanReceiver,
     create_packet_recv_chan,
     encrypt::{Encryptor, NullCipher},
     foreign_network_client::ForeignNetworkClient,
@@ -58,7 +58,6 @@ use super::{
     peer_ospf_route::PeerRoute,
     peer_rpc::PeerRpcManager,
     route_trait::{ArcRoute, Route},
-    BoxNicPacketFilter, BoxPeerPacketFilter, PacketRecvChan, PacketRecvChanReceiver,
 };
 
 struct RpcTransport {
@@ -96,11 +95,10 @@ impl PeerRpcManagerTransport for RpcTransport {
     }
 
     async fn recv(&self) -> Result<ZCPacket, Error> {
-        match self.packet_recv.lock().await.recv().await { Some(o) => {
-            Ok(o)
-        } _ => {
-            Err(Error::Unknown)
-        }}
+        match self.packet_recv.lock().await.recv().await {
+            Some(o) => Ok(o),
+            _ => Err(Error::Unknown),
+        }
     }
 }
 
@@ -1046,7 +1044,7 @@ mod tests {
             tests::{connect_peer_manager, wait_route_appear, wait_route_appear_with_cost},
         },
         proto::common::{CompressionAlgoPb, NatType, PeerFeatureFlag},
-        tunnel::{common::tests::wait_for_condition, TunnelConnector, TunnelListener},
+        tunnel::{TunnelConnector, TunnelListener, common::tests::wait_for_condition},
     };
 
     use super::PeerManager;

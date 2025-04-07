@@ -8,9 +8,9 @@ use anyhow::Context;
 use tokio::sync::Mutex;
 
 use crate::{
-    common::{scoped_task::ScopedTask, stun::StunInfoCollectorTrait, PeerId},
+    common::{PeerId, scoped_task::ScopedTask, stun::StunInfoCollectorTrait},
     connector::udp_hole_punch::common::{
-        try_connect_with_socket, UdpHolePunchListener, HOLE_PUNCH_PACKET_BODY_LEN,
+        HOLE_PUNCH_PACKET_BODY_LEN, UdpHolePunchListener, try_connect_with_socket,
     },
     peers::peer_manager::PeerManager,
     proto::{
@@ -20,7 +20,7 @@ use crate::{
         },
         rpc_types::{self, controller::BaseController},
     },
-    tunnel::{udp::new_hole_punch_packet, Tunnel},
+    tunnel::{Tunnel, udp::new_hole_punch_packet},
 };
 
 use super::common::{PunchHoleServerCommon, UdpNatType, UdpSocketArray};
@@ -319,7 +319,7 @@ impl PunchBothEasySymHoleClient {
 #[cfg(test)]
 pub mod tests {
     use std::{
-        sync::{atomic::AtomicU32, Arc},
+        sync::{Arc, atomic::AtomicU32},
         time::Duration,
     };
 
@@ -328,7 +328,7 @@ pub mod tests {
     use crate::connector::udp_hole_punch::RUN_TESTING;
     use crate::{
         connector::udp_hole_punch::{
-            tests::create_mock_peer_manager_with_mock_stun, UdpHolePunchConnector,
+            UdpHolePunchConnector, tests::create_mock_peer_manager_with_mock_stun,
         },
         peers::tests::{connect_peer_manager, wait_route_appear},
         proto::common::NatType,

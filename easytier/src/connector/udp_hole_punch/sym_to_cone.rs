@@ -2,21 +2,21 @@ use std::{
     net::Ipv4Addr,
     ops::{Div, Mul},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
 };
 
 use anyhow::Context;
-use rand::{seq::SliceRandom, Rng};
+use rand::{Rng, seq::SliceRandom};
 use tokio::{net::UdpSocket, sync::RwLock};
 use tracing::Level;
 
 use crate::{
-    common::{scoped_task::ScopedTask, stun::StunInfoCollectorTrait, PeerId},
+    common::{PeerId, scoped_task::ScopedTask, stun::StunInfoCollectorTrait},
     connector::udp_hole_punch::common::{
-        send_symmetric_hole_punch_packet, try_connect_with_socket, HOLE_PUNCH_PACKET_BODY_LEN,
+        HOLE_PUNCH_PACKET_BODY_LEN, send_symmetric_hole_punch_packet, try_connect_with_socket,
     },
     defer,
     peers::peer_manager::PeerManager,
@@ -28,7 +28,7 @@ use crate::{
         },
         rpc_types::{self, controller::BaseController},
     },
-    tunnel::{udp::new_hole_punch_packet, Tunnel},
+    tunnel::{Tunnel, udp::new_hole_punch_packet},
 };
 
 use super::common::{PunchHoleServerCommon, UdpNatType, UdpSocketArray};
@@ -515,7 +515,7 @@ impl PunchSymToConeHoleClient {
 #[cfg(test)]
 pub mod tests {
     use std::{
-        sync::{atomic::AtomicU32, Arc},
+        sync::{Arc, atomic::AtomicU32},
         time::Duration,
     };
 
@@ -523,7 +523,7 @@ pub mod tests {
 
     use crate::{
         connector::udp_hole_punch::{
-            tests::create_mock_peer_manager_with_mock_stun, UdpHolePunchConnector, RUN_TESTING,
+            RUN_TESTING, UdpHolePunchConnector, tests::create_mock_peer_manager_with_mock_stun,
         },
         peers::tests::{connect_peer_manager, wait_route_appear, wait_route_appear_with_cost},
         proto::common::NatType,

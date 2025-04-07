@@ -10,22 +10,22 @@ use tokio::{task::JoinSet, time::timeout};
 use tokio_stream::StreamExt;
 
 use crate::{
-    common::{join_joinset_background, PeerId},
+    common::{PeerId, join_joinset_background},
     proto::{
         common::{self, CompressionAlgoPb, RpcCompressionInfo, RpcPacket, RpcRequest, RpcResponse},
         rpc_types::{controller::Controller, error::Result},
     },
     tunnel::{
+        Tunnel, ZCPacketStream,
         mpsc::{MpscTunnel, MpscTunnelSender},
         ring::create_ring_tunnel_pair,
-        Tunnel, ZCPacketStream,
     },
 };
 
 use super::{
-    packet::{build_rpc_packet, compress_packet, decompress_packet, PacketMerger},
-    service_registry::ServiceRegistry,
     RpcController, Transport,
+    packet::{PacketMerger, build_rpc_packet, compress_packet, decompress_packet},
+    service_registry::ServiceRegistry,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -163,11 +163,10 @@ impl Server {
             reg.call_method(packet.descriptor.unwrap(), ctrl.clone(), raw_req),
         )
         .await??;
-        match ctrl.get_raw_output() { Some(raw_output) => {
-            Ok(raw_output)
-        } _ => {
-            Ok(ret)
-        }}
+        match ctrl.get_raw_output() {
+            Some(raw_output) => Ok(raw_output),
+            _ => Ok(ret),
+        }
     }
 
     async fn handle_rpc(sender: MpscTunnelSender, packet: RpcPacket, reg: Arc<ServiceRegistry>) {

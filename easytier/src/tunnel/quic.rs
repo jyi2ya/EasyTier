@@ -5,17 +5,16 @@
 use std::{error::Error, net::SocketAddr, sync::Arc};
 
 use crate::tunnel::{
-    check_scheme_and_get_socket_addr_ext,
+    TunnelInfo, check_scheme_and_get_socket_addr_ext,
     common::{FramedReader, FramedWriter, TunnelWrapper},
-    TunnelInfo,
 };
 use anyhow::Context;
-use quinn::{crypto::rustls::QuicClientConfig, ClientConfig, Connection, Endpoint, ServerConfig};
+use quinn::{ClientConfig, Connection, Endpoint, ServerConfig, crypto::rustls::QuicClientConfig};
 
 use super::{
+    IpVersion, Tunnel, TunnelConnector, TunnelError, TunnelListener,
     check_scheme_and_get_socket_addr,
     insecure_tls::{get_insecure_tls_cert, get_insecure_tls_client_config},
-    IpVersion, Tunnel, TunnelConnector, TunnelError, TunnelListener,
 };
 
 fn configure_client() -> ClientConfig {
@@ -204,8 +203,8 @@ impl TunnelConnector for QUICTunnelConnector {
 #[cfg(test)]
 mod tests {
     use crate::tunnel::{
-        common::tests::{_tunnel_bench, _tunnel_pingpong},
         IpVersion,
+        common::tests::{_tunnel_bench, _tunnel_pingpong},
     };
 
     use super::*;

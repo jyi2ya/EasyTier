@@ -2,7 +2,7 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use bytes::BytesMut;
-use futures::{stream::FuturesUnordered, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt, stream::FuturesUnordered};
 use tokio::{
     net::{TcpListener, TcpSocket, TcpStream},
     time::timeout,
@@ -15,10 +15,10 @@ use super::TunnelInfo;
 use crate::tunnel::insecure_tls::get_insecure_tls_client_config;
 
 use super::{
-    common::{setup_sokcet2, wait_for_connect_futures, TunnelWrapper},
+    FromUrl, IpVersion, Tunnel, TunnelConnector, TunnelError, TunnelListener,
+    common::{TunnelWrapper, setup_sokcet2, wait_for_connect_futures},
     insecure_tls::{get_insecure_tls_cert, init_crypto_provider},
     packet_def::{ZCPacket, ZCPacketType},
-    FromUrl, IpVersion, Tunnel, TunnelConnector, TunnelError, TunnelListener,
 };
 
 fn is_wss(addr: &url::Url) -> Result<bool, TunnelError> {
@@ -205,12 +205,8 @@ impl WSTunnelConnector {
             let tls_conn =
                 tokio_rustls::TlsConnector::from(Arc::new(get_insecure_tls_client_config()));
             let domain_or_ip = match domain {
-                None => {
-                    host.to_string()
-                }
-                Some(domain) => {
-                    domain.to_string()
-                }
+                None => host.to_string(),
+                Some(domain) => domain.to_string(),
             };
             let stream = tls_conn
                 .connect(domain_or_ip.try_into().unwrap(), stream)

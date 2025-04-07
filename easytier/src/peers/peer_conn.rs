@@ -3,8 +3,8 @@ use std::{
     fmt::Debug,
     pin::Pin,
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc,
+        atomic::{AtomicU32, Ordering},
     },
 };
 
@@ -13,9 +13,9 @@ use futures::{StreamExt, TryFutureExt};
 use prost::Message;
 
 use tokio::{
-    sync::{broadcast, mpsc, Mutex},
+    sync::{Mutex, broadcast, mpsc},
     task::JoinSet,
-    time::{timeout, Duration},
+    time::{Duration, timeout},
 };
 
 use tracing::Instrument;
@@ -23,11 +23,11 @@ use zerocopy::AsBytes;
 
 use crate::{
     common::{
+        PeerId,
         config::{NetworkIdentity, NetworkSecretDigest},
         defer,
         error::Error,
         global_ctx::ArcGlobalCtx,
-        PeerId,
     },
     proto::{
         cli::{PeerConnInfo, PeerConnStats},
@@ -35,15 +35,15 @@ use crate::{
         peer_rpc::HandshakeRequest,
     },
     tunnel::{
+        Tunnel, TunnelError, ZCPacketStream,
         filter::{StatsRecorderTunnelFilter, TunnelFilter, TunnelWithFilter},
         mpsc::{MpscTunnel, MpscTunnelSender},
         packet_def::{PacketType, ZCPacket},
         stats::{Throughput, WindowLatency},
-        Tunnel, TunnelError, ZCPacketStream,
     },
 };
 
-use super::{peer_conn_ping::PeerConnPinger, PacketRecvChan};
+use super::{PacketRecvChan, peer_conn_ping::PeerConnPinger};
 
 pub type PeerConnId = uuid::Uuid;
 
@@ -139,12 +139,12 @@ impl PeerConn {
                 return Err(Error::WaitRespError(format!(
                     "conn recv error during wait handshake response, err: {:?}",
                     e
-                )))
+                )));
             }
             None => {
                 return Err(Error::WaitRespError(
                     "conn closed during wait handshake response".to_owned(),
-                ))
+                ));
             }
         };
 
@@ -414,8 +414,8 @@ mod tests {
     use crate::common::new_peer_id;
     use crate::common::scoped_task::ScopedTask;
     use crate::peers::create_packet_recv_chan;
-    use crate::tunnel::filter::tests::DropSendTunnelFilter;
     use crate::tunnel::filter::PacketRecorderTunnelFilter;
+    use crate::tunnel::filter::tests::DropSendTunnelFilter;
     use crate::tunnel::ring::create_ring_tunnel_pair;
 
     #[tokio::test]

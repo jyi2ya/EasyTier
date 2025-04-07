@@ -8,9 +8,9 @@ use super::TunnelInfo;
 use crate::tunnel::common::setup_sokcet2;
 
 use super::{
-    check_scheme_and_get_socket_addr, check_scheme_and_get_socket_addr_ext,
-    common::{wait_for_connect_futures, FramedReader, FramedWriter, TunnelWrapper},
-    IpVersion, Tunnel, TunnelError, TunnelListener,
+    IpVersion, Tunnel, TunnelError, TunnelListener, check_scheme_and_get_socket_addr,
+    check_scheme_and_get_socket_addr_ext,
+    common::{FramedReader, FramedWriter, TunnelWrapper, wait_for_connect_futures},
 };
 
 const TCP_MTU_BYTES: usize = 2000;
@@ -214,8 +214,8 @@ impl super::TunnelConnector for TcpTunnelConnector {
 #[cfg(test)]
 mod tests {
     use crate::tunnel::{
-        common::tests::{_tunnel_bench, _tunnel_pingpong},
         TunnelConnector,
+        common::tests::{_tunnel_bench, _tunnel_pingpong},
     };
 
     use super::*;

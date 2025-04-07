@@ -32,11 +32,7 @@ impl PeerRoutePair {
             ret += stats.rx_bytes;
         }
 
-        if ret == 0 {
-            None
-        } else {
-            Some(ret)
-        }
+        if ret == 0 { None } else { Some(ret) }
     }
 
     pub fn get_tx_bytes(&self) -> Option<u64> {
@@ -49,11 +45,7 @@ impl PeerRoutePair {
             ret += stats.tx_bytes;
         }
 
-        if ret == 0 {
-            None
-        } else {
-            Some(ret)
-        }
+        if ret == 0 { None } else { Some(ret) }
     }
 
     pub fn get_loss_rate(&self) -> Option<f64> {
@@ -63,11 +55,7 @@ impl PeerRoutePair {
             ret += conn.loss_rate;
         }
 
-        if ret == 0.0 {
-            None
-        } else {
-            Some(ret as f64)
-        }
+        if ret == 0.0 { None } else { Some(ret as f64) }
     }
 
     pub fn get_conn_protos(&self) -> Option<Vec<String>> {
@@ -83,11 +71,7 @@ impl PeerRoutePair {
             }
         }
 
-        if ret.is_empty() {
-            None
-        } else {
-            Some(ret)
-        }
+        if ret.is_empty() { None } else { Some(ret) }
     }
 
     pub fn get_udp_nat_type(self: &Self) -> String {

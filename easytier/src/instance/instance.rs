@@ -9,10 +9,10 @@ use cidr::Ipv4Inet;
 
 use tokio::{sync::Mutex, task::JoinSet};
 
+use crate::common::PeerId;
 use crate::common::config::ConfigLoader;
 use crate::common::error::Error;
 use crate::common::global_ctx::{ArcGlobalCtx, GlobalCtx, GlobalCtxEvent};
-use crate::common::PeerId;
 use crate::connector::direct::DirectConnectorManager;
 use crate::connector::manual::{ConnectorManagerRpcService, ManualConnectorManager};
 use crate::connector::udp_hole_punch::UdpHolePunchConnector;
@@ -24,7 +24,7 @@ use crate::peer_center::instance::PeerCenterInstance;
 use crate::peers::peer_conn::PeerConnId;
 use crate::peers::peer_manager::{PeerManager, RouteAlgoType};
 use crate::peers::rpc_service::PeerManagerRpcService;
-use crate::peers::{create_packet_recv_chan, recv_packet_from_chan, PacketRecvChanReceiver};
+use crate::peers::{PacketRecvChanReceiver, create_packet_recv_chan, recv_packet_from_chan};
 use crate::proto::cli::VpnPortalRpc;
 use crate::proto::cli::{GetVpnPortalInfoRequest, GetVpnPortalInfoResponse, VpnPortalInfo};
 use crate::proto::peer_rpc::PeerCenterRpcServer;
@@ -472,7 +472,9 @@ impl Instance {
         self.peer_manager.my_peer_id()
     }
 
-    fn get_vpn_portal_rpc_service(&self) -> impl VpnPortalRpc<Controller = BaseController> + Clone + use<> {
+    fn get_vpn_portal_rpc_service(
+        &self,
+    ) -> impl VpnPortalRpc<Controller = BaseController> + Clone + use<> {
         #[derive(Clone)]
         struct VpnPortalRpcService {
             peer_mgr: Weak<PeerManager>,

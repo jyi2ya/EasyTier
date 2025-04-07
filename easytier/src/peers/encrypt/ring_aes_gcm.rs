@@ -3,7 +3,7 @@ use ring::aead::{self};
 use ring::aead::{LessSafeKey, UnboundKey};
 use zerocopy::{AsBytes, FromBytes};
 
-use crate::tunnel::packet_def::{AesGcmTail, ZCPacket, AES_GCM_ENCRYPTION_RESERVED};
+use crate::tunnel::packet_def::{AES_GCM_ENCRYPTION_RESERVED, AesGcmTail, ZCPacket};
 
 use super::{Encryptor, Error};
 
@@ -136,8 +136,8 @@ impl Encryptor for AesGcmCipher {
 #[cfg(test)]
 mod tests {
     use crate::{
-        peers::encrypt::{ring_aes_gcm::AesGcmCipher, Encryptor},
-        tunnel::packet_def::{ZCPacket, AES_GCM_ENCRYPTION_RESERVED},
+        peers::encrypt::{Encryptor, ring_aes_gcm::AesGcmCipher},
+        tunnel::packet_def::{AES_GCM_ENCRYPTION_RESERVED, ZCPacket},
     };
 
     #[test]

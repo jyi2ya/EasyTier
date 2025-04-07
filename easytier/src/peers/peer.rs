@@ -8,15 +8,15 @@ use tokio::{select, sync::mpsc, task::JoinHandle};
 use tracing::Instrument;
 
 use super::{
-    peer_conn::{PeerConn, PeerConnId},
     PacketRecvChan,
+    peer_conn::{PeerConn, PeerConnId},
 };
 use crate::{common::scoped_task::ScopedTask, proto::cli::PeerConnInfo};
 use crate::{
     common::{
+        PeerId,
         error::Error,
         global_ctx::{ArcGlobalCtx, GlobalCtxEvent},
-        PeerId,
     },
     tunnel::packet_def::ZCPacket,
 };

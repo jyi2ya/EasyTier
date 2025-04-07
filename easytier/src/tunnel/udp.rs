@@ -7,7 +7,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use bytes::BytesMut;
 use dashmap::DashMap;
-use futures::{stream::FuturesUnordered, StreamExt};
+use futures::{StreamExt, stream::FuturesUnordered};
 use rand::{Rng, SeedableRng};
 use zerocopy::AsBytes;
 
@@ -18,24 +18,24 @@ use tokio::{
     task::JoinSet,
 };
 
-use tracing::{instrument, Instrument};
+use tracing::{Instrument, instrument};
 
 use super::TunnelInfo;
 use crate::{
     common::{join_joinset_background, scoped_task::ScopedTask},
     tunnel::{
         build_url_from_socket_addr,
-        common::{reserve_buf, TunnelWrapper},
+        common::{TunnelWrapper, reserve_buf},
         packet_def::{UdpPacketType, ZCPacket, ZCPacketType},
         ring::RingTunnel,
     },
 };
 
 use super::{
-    common::{setup_sokcet2, setup_sokcet2_ext, wait_for_connect_futures},
-    packet_def::{UDPTunnelHeader, UDP_TUNNEL_HEADER_SIZE},
-    ring::{RingSink, RingStream},
     IpVersion, Tunnel, TunnelConnCounter, TunnelError, TunnelListener, TunnelUrl,
+    common::{setup_sokcet2, setup_sokcet2_ext, wait_for_connect_futures},
+    packet_def::{UDP_TUNNEL_HEADER_SIZE, UDPTunnelHeader},
+    ring::{RingSink, RingStream},
 };
 
 pub const UDP_DATA_MTU: usize = 2000;
@@ -813,12 +813,11 @@ mod tests {
     use crate::{
         common::global_ctx::tests::get_mock_global_ctx,
         tunnel::{
-            check_scheme_and_get_socket_addr,
+            TunnelConnector, check_scheme_and_get_socket_addr,
             common::{
                 get_interface_name_by_ip,
                 tests::{_tunnel_bench, _tunnel_echo_server, _tunnel_pingpong, wait_for_condition},
             },
-            TunnelConnector,
         },
     };
 

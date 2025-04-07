@@ -4,7 +4,7 @@ use aes_gcm::{AeadCore, AeadInPlace, Aes128Gcm, Aes256Gcm, Key, KeyInit, Nonce, 
 use rand::rngs::OsRng;
 use zerocopy::{AsBytes, FromBytes};
 
-use crate::tunnel::packet_def::{AesGcmTail, ZCPacket, AES_GCM_ENCRYPTION_RESERVED};
+use crate::tunnel::packet_def::{AES_GCM_ENCRYPTION_RESERVED, AesGcmTail, ZCPacket};
 
 use super::{Encryptor, Error};
 
@@ -121,8 +121,8 @@ impl Encryptor for AesGcmCipher {
 #[cfg(test)]
 mod tests {
     use crate::{
-        peers::encrypt::{aes_gcm::AesGcmCipher, Encryptor},
-        tunnel::packet_def::{ZCPacket, AES_GCM_ENCRYPTION_RESERVED},
+        peers::encrypt::{Encryptor, aes_gcm::AesGcmCipher},
+        tunnel::packet_def::{AES_GCM_ENCRYPTION_RESERVED, ZCPacket},
     };
 
     #[test]

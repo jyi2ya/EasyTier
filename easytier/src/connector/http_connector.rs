@@ -248,7 +248,7 @@ mod tests {
 
     use crate::{
         common::global_ctx::tests::get_mock_global_ctx,
-        tunnel::{tcp::TcpTunnelListener, TunnelConnector, TunnelListener},
+        tunnel::{TunnelConnector, TunnelListener, tcp::TcpTunnelListener},
     };
 
     use super::*;

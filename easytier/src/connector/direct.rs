@@ -5,14 +5,14 @@ use std::{
     net::{Ipv6Addr, SocketAddr},
     str::FromStr,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
 
 use crate::{
-    common::{error::Error, global_ctx::ArcGlobalCtx, PeerId},
+    common::{PeerId, error::Error, global_ctx::ArcGlobalCtx},
     peers::{
         peer_manager::PeerManager, peer_rpc::PeerRpcManager,
         peer_rpc_service::DirectConnectorManagerRpcServer,
@@ -499,12 +499,9 @@ mod tests {
 
         let port = if proto == "wg" { 11040 } else { 11041 };
         if !ipv6 {
-            p_c.get_global_ctx().config.set_listeners(vec![format!(
-                "{}://0.0.0.0:{}",
-                proto, port
-            )
-            .parse()
-            .unwrap()]);
+            p_c.get_global_ctx().config.set_listeners(vec![
+                format!("{}://0.0.0.0:{}", proto, port).parse().unwrap(),
+            ]);
         } else {
             p_c.get_global_ctx()
                 .config
@@ -543,11 +540,12 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(data
-            .dst_listener_blacklist
-            .contains(&DstListenerUrlBlackListItem(
-                1,
-                "tcp://127.0.0.1:10222".parse().unwrap()
-            )));
+        assert!(
+            data.dst_listener_blacklist
+                .contains(&DstListenerUrlBlackListItem(
+                    1,
+                    "tcp://127.0.0.1:10222".parse().unwrap()
+                ))
+        );
     }
 }

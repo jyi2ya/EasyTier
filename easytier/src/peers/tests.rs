@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::{
     common::{
+        PeerId,
         error::Error,
         global_ctx::{
-            tests::{get_mock_global_ctx, get_mock_global_ctx_with_network},
             NetworkIdentity,
+            tests::{get_mock_global_ctx, get_mock_global_ctx_with_network},
         },
-        PeerId,
     },
     tunnel::ring::create_ring_tunnel_pair,
 };

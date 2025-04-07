@@ -8,11 +8,11 @@ use crate::proto::common::{NatType, StunInfo};
 use anyhow::Context;
 use chrono::Local;
 use crossbeam::atomic::AtomicCell;
-use hickory_resolver::config::{NameServerConfig, Protocol, ResolverConfig, ResolverOpts};
 use hickory_resolver::TokioAsyncResolver;
+use hickory_resolver::config::{NameServerConfig, Protocol, ResolverConfig, ResolverOpts};
 use rand::seq::IteratorRandom;
-use tokio::net::{lookup_host, UdpSocket};
-use tokio::sync::{broadcast, Mutex};
+use tokio::net::{UdpSocket, lookup_host};
+use tokio::sync::{Mutex, broadcast};
 use tokio::task::JoinSet;
 use tracing::{Instrument, Level};
 
@@ -942,7 +942,7 @@ impl StunInfoCollectorTrait for MockStunInfoCollector {
 
 #[cfg(test)]
 mod tests {
-    use crate::tunnel::{udp::UdpTunnelListener, TunnelListener};
+    use crate::tunnel::{TunnelListener, udp::UdpTunnelListener};
 
     use super::*;
 

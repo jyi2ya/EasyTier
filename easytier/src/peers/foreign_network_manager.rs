@@ -13,20 +13,20 @@ use std::{
 use dashmap::DashMap;
 use tokio::{
     sync::{
-        mpsc::{self, UnboundedReceiver, UnboundedSender},
         Mutex,
+        mpsc::{self, UnboundedReceiver, UnboundedSender},
     },
     task::JoinSet,
 };
 
 use crate::{
     common::{
+        PeerId,
         config::{ConfigLoader, TomlConfigLoader},
         error::Error,
         global_ctx::{ArcGlobalCtx, GlobalCtx, GlobalCtxEvent, NetworkIdentity},
         join_joinset_background,
         stun::MockStunInfoCollector,
-        PeerId,
     },
     peers::route_trait::{Route, RouteInterface},
     proto::{
@@ -38,7 +38,7 @@ use crate::{
 };
 
 use super::{
-    create_packet_recv_chan,
+    PacketRecvChan, PacketRecvChanReceiver, create_packet_recv_chan,
     peer_conn::PeerConn,
     peer_map::PeerMap,
     peer_ospf_route::PeerRoute,
@@ -46,7 +46,6 @@ use super::{
     peer_rpc_service::DirectConnectorManagerRpcServer,
     recv_packet_from_chan,
     route_trait::NextHopPolicy,
-    PacketRecvChan, PacketRecvChanReceiver,
 };
 
 #[async_trait::async_trait]
@@ -173,12 +172,13 @@ impl ForeignNetworkEntry {
             }
 
             async fn recv(&self) -> Result<ZCPacket, Error> {
-                match self.packet_recv.lock().await.recv().await { Some(o) => {
-                    tracing::info!("recv rpc packet in foreign network manager rpc transport");
-                    Ok(o)
-                } _ => {
-                    Err(Error::Unknown)
-                }}
+                match self.packet_recv.lock().await.recv().await {
+                    Some(o) => {
+                        tracing::info!("recv rpc packet in foreign network manager rpc transport");
+                        Ok(o)
+                    }
+                    _ => Err(Error::Unknown),
+                }
             }
         }
 
@@ -594,14 +594,15 @@ impl ForeignNetworkManager {
         dst_peer_id: PeerId,
         msg: ZCPacket,
     ) -> Result<(), Error> {
-        match self.data.get_network_entry(network_name) { Some(entry) => {
-            entry
-                .peer_map
-                .send_msg(msg, dst_peer_id, NextHopPolicy::LeastHop)
-                .await
-        } _ => {
-            Err(Error::RouteError(Some("network not found".to_string())))
-        }}
+        match self.data.get_network_entry(network_name) {
+            Some(entry) => {
+                entry
+                    .peer_map
+                    .send_msg(msg, dst_peer_id, NextHopPolicy::LeastHop)
+                    .await
+            }
+            _ => Err(Error::RouteError(Some("network not found".to_string()))),
+        }
     }
 }
 

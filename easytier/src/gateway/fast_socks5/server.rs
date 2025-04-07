@@ -1,10 +1,10 @@
+use super::Socks5Command;
 use super::new_udp_header;
 use super::parse_udp_request;
 use super::read_exact;
 use super::util::stream::tcp_connect_with_timeout;
-use super::util::target_addr::{read_address, TargetAddr};
-use super::Socks5Command;
-use super::{consts, AuthenticationMethod, ReplyError, Result, SocksError};
+use super::util::target_addr::{TargetAddr, read_address};
+use super::{AuthenticationMethod, ReplyError, Result, SocksError, consts};
 use anyhow::Context;
 use std::io;
 use std::net::IpAddr;
@@ -444,28 +444,31 @@ impl<T: AsyncRead + AsyncWrite + Unpin, A: Authentication, C: AsyncTcpConnector>
 
         let auth = self.config.auth.as_ref().context("No auth module")?;
 
-        match auth.authenticate(credentials).await { Some(credentials) => {
-            if auth_method == consts::SOCKS5_AUTH_METHOD_PASSWORD {
-                // only the password way expect to write a response at this moment
-                self.inner
-                    .write_all(&[1, consts::SOCKS5_REPLY_SUCCEEDED])
-                    .await
-                    .context("Can't reply auth success")?;
+        match auth.authenticate(credentials).await {
+            Some(credentials) => {
+                if auth_method == consts::SOCKS5_AUTH_METHOD_PASSWORD {
+                    // only the password way expect to write a response at this moment
+                    self.inner
+                        .write_all(&[1, consts::SOCKS5_REPLY_SUCCEEDED])
+                        .await
+                        .context("Can't reply auth success")?;
+                }
+
+                info!("User logged successfully.");
+
+                return Ok(credentials);
             }
+            _ => {
+                self.inner
+                    .write_all(&[1, consts::SOCKS5_AUTH_METHOD_NOT_ACCEPTABLE])
+                    .await
+                    .context("Can't reply with auth method not acceptable.")?;
 
-            info!("User logged successfully.");
-
-            return Ok(credentials);
-        } _ => {
-            self.inner
-                .write_all(&[1, consts::SOCKS5_AUTH_METHOD_NOT_ACCEPTABLE])
-                .await
-                .context("Can't reply with auth method not acceptable.")?;
-
-            return Err(SocksError::AuthenticationRejected(format!(
-                "Authentication, rejected."
-            )));
-        }}
+                return Err(SocksError::AuthenticationRejected(format!(
+                    "Authentication, rejected."
+                )));
+            }
+        }
     }
 
     /// Wrapper to principally cover ReplyError types for both functions read & execute request.

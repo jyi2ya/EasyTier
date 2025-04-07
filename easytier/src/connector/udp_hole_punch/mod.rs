@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{Arc, atomic::AtomicBool};
 
 use anyhow::{Context, Error};
 use both_easy_sym::{PunchBothEasySymHoleClient, PunchBothEasySymHoleServer};
@@ -10,7 +10,7 @@ use sym_to_cone::{PunchSymToConeHoleClient, PunchSymToConeHoleServer};
 use tokio::{sync::Mutex, task::JoinHandle};
 
 use crate::{
-    common::{stun::StunInfoCollectorTrait, PeerId},
+    common::{PeerId, stun::StunInfoCollectorTrait},
     connector::direct::PeerManagerForDirectConnector,
     peers::{
         peer_manager::PeerManager,
@@ -221,13 +221,14 @@ impl UdpHoePunchConnectorData {
             Ok(Some(tunnel)) => {
                 tracing::info!(?tunnel, "hole punching get tunnel success");
 
-                match self.peer_mgr.add_client_tunnel(tunnel).await { Err(e) => {
-                    tracing::warn!(?e, "add client tunnel failed");
-                    op(true);
-                    false
-                } _ => {
-                    true
-                }}
+                match self.peer_mgr.add_client_tunnel(tunnel).await {
+                    Err(e) => {
+                        tracing::warn!(?e, "add client tunnel failed");
+                        op(true);
+                        false
+                    }
+                    _ => true,
+                }
             }
             Ok(None) => {
                 tracing::info!("hole punching failed, no punch tunnel");

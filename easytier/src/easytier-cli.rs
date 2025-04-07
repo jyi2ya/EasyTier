@@ -595,7 +595,7 @@ impl CommandHandler {
                         .clone(),
                     next_hop_lat: next_hop_pair.get_latency_ms().unwrap_or(0.0),
                     path_len: route.cost,
-                    path_latency: p.route.clone().unwrap_or_default().path_latency as i32,
+                    path_latency: p.route.clone().unwrap_or_default().path_latency,
 
                     next_hop_ipv4_lat_first: next_hop_pair_latency_first
                         .map(|pair| pair.route.clone().unwrap_or_default().ipv4_addr)
@@ -1073,13 +1073,13 @@ async fn main() -> Result<(), Error> {
                     ip_list.interface_ipv4s.iter().for_each(|ip| {
                         builder.push_record(vec![
                             "Interface IPv4",
-                            format!("{}", ip.to_string()).as_str(),
+                            ip.to_string().as_str(),
                         ]);
                     });
                     ip_list.interface_ipv6s.iter().for_each(|ip| {
                         builder.push_record(vec![
                             "Interface IPv6",
-                            format!("{}", ip.to_string()).as_str(),
+                            ip.to_string().as_str(),
                         ]);
                     });
                     for (idx, l) in node_info.listeners.iter().enumerate() {

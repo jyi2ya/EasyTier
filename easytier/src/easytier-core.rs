@@ -423,8 +423,8 @@ impl TryFrom<&Cli> for TomlConfigLoader {
                 "NOTICE: loading config file: {:?}, will ignore all command line flags\n",
                 config_file
             );
-            return Ok(TomlConfigLoader::new(config_file)
-                .with_context(|| format!("failed to load config file: {:?}", cli.config_file))?);
+            return TomlConfigLoader::new(config_file)
+                .with_context(|| format!("failed to load config file: {:?}", cli.config_file));
         }
 
         let cfg = TomlConfigLoader::default();
@@ -566,18 +566,15 @@ impl TryFrom<&Cli> for TomlConfigLoader {
                 port_forward.port().expect("local bind port is missing")
             )
             .parse()
-            .expect(format!("failed to parse local bind addr {}", example_str).as_str());
+            .unwrap_or_else(|_| panic!("failed to parse local bind addr {}", example_str));
 
-            let dst_addr = format!(
-                "{}",
-                port_forward
+            let dst_addr = port_forward
                     .path_segments()
-                    .expect(format!("remote destination addr is missing {}", example_str).as_str())
+                    .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str))
                     .next()
-                    .expect(format!("remote destination addr is missing {}", example_str).as_str())
-            )
+                    .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str)).to_string()
             .parse()
-            .expect(format!("failed to parse remote destination addr {}", example_str).as_str());
+            .unwrap_or_else(|_| panic!("failed to parse remote destination addr {}", example_str));
 
             let port_forward_item = PortForwardConfig {
                 bind_addr,

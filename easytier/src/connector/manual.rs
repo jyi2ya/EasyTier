@@ -252,16 +252,16 @@ impl ManualConnectorManager {
         let remove_later = DashSet::new();
         for it in data.removed_conn_urls.iter() {
             let url = it.key();
-            if let Some(_) = data.connectors.remove(url) {
+            match data.connectors.remove(url) { Some(_) => {
                 tracing::warn!("connector: {}, removed", url);
                 continue;
-            } else if data.reconnecting.contains(url) {
+            } _ => if data.reconnecting.contains(url) {
                 tracing::warn!("connector: {}, reconnecting, remove later.", url);
                 remove_later.insert(url.clone());
                 continue;
             } else {
                 tracing::warn!("connector: {}, not found", url);
-            }
+            }}
         }
         data.removed_conn_urls.clear();
         for it in remove_later.iter() {

@@ -472,7 +472,7 @@ impl Instance {
         self.peer_manager.my_peer_id()
     }
 
-    fn get_vpn_portal_rpc_service(&self) -> impl VpnPortalRpc<Controller = BaseController> + Clone {
+    fn get_vpn_portal_rpc_service(&self) -> impl VpnPortalRpc<Controller = BaseController> + Clone + use<> {
         #[derive(Clone)]
         struct VpnPortalRpcService {
             peer_mgr: Weak<PeerManager>,

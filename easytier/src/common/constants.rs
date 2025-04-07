@@ -1,5 +1,5 @@
 macro_rules! define_global_var {
-    ($name:ident, $type:ty, $init:expr) => {
+    ($name:ident, $type:ty, $init:expr_2021) => {
         pub static $name: once_cell::sync::Lazy<tokio::sync::Mutex<$type>> =
             once_cell::sync::Lazy::new(|| tokio::sync::Mutex::new($init));
     };
@@ -14,7 +14,7 @@ macro_rules! use_global_var {
 
 #[macro_export]
 macro_rules! set_global_var {
-    ($name:ident, $val:expr) => {
+    ($name:ident, $val:expr_2021) => {
         *crate::common::constants::$name.lock().await = $val
     };
 }

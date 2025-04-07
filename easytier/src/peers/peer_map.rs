@@ -205,11 +205,11 @@ impl PeerMap {
     }
 
     pub async fn list_peer_conns(&self, peer_id: PeerId) -> Option<Vec<PeerConnInfo>> {
-        if let Some(p) = self.get_peer_by_id(peer_id) {
+        match self.get_peer_by_id(peer_id) { Some(p) => {
             Some(p.list_peer_conns().await)
-        } else {
+        } _ => {
             return None;
-        }
+        }}
     }
 
     pub async fn get_peer_default_conn_id(&self, peer_id: PeerId) -> Option<PeerConnId> {
@@ -222,11 +222,11 @@ impl PeerMap {
         peer_id: PeerId,
         conn_id: &PeerConnId,
     ) -> Result<(), Error> {
-        if let Some(p) = self.get_peer_by_id(peer_id) {
+        match self.get_peer_by_id(peer_id) { Some(p) => {
             p.close_peer_conn(conn_id).await
-        } else {
+        } _ => {
             return Err(Error::NotFound);
-        }
+        }}
     }
 
     pub async fn close_peer(&self, peer_id: PeerId) -> Result<(), TunnelError> {

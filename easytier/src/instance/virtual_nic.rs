@@ -495,7 +495,7 @@ impl VirtualNic {
         Ok(())
     }
 
-    pub fn get_ifcfg(&self) -> impl IfConfiguerTrait {
+    pub fn get_ifcfg(&self) -> impl IfConfiguerTrait + use<> {
         IfConfiger {}
     }
 }

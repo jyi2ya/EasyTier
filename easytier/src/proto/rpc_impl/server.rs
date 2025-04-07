@@ -163,11 +163,11 @@ impl Server {
             reg.call_method(packet.descriptor.unwrap(), ctrl.clone(), raw_req),
         )
         .await??;
-        if let Some(raw_output) = ctrl.get_raw_output() {
+        match ctrl.get_raw_output() { Some(raw_output) => {
             Ok(raw_output)
-        } else {
+        } _ => {
             Ok(ret)
-        }
+        }}
     }
 
     async fn handle_rpc(sender: MpscTunnelSender, packet: RpcPacket, reg: Arc<ServiceRegistry>) {

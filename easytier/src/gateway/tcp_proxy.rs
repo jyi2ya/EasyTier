@@ -383,14 +383,14 @@ impl<C: NatDstConnector> NicPacketFilter for TcpProxy<C> {
         }
 
         tracing::trace!(dst_addr = ?dst_addr, "tcp packet try find entry");
-        let entry = if let Some(entry) = self.addr_conn_map.get(&dst_addr) {
+        let entry = match self.addr_conn_map.get(&dst_addr) { Some(entry) => {
             entry
-        } else {
+        } _ => {
             let Some(syn_entry) = self.syn_map.get(&dst_addr) else {
                 return false;
             };
             syn_entry
-        };
+        }};
         let nat_entry = entry.clone();
         drop(entry);
         assert_eq!(nat_entry.src, dst_addr);

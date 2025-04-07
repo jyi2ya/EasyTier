@@ -76,10 +76,10 @@ impl AsyncRead for SocksTcpStream {
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(ref mut stream) => {
+            SocksTcpStream::TcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_read(cx, buf)
             }
-            SocksTcpStream::SmolTcpStream(ref mut stream) => {
+            SocksTcpStream::SmolTcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_read(cx, buf)
             }
         }
@@ -93,10 +93,10 @@ impl AsyncWrite for SocksTcpStream {
         buf: &[u8],
     ) -> std::task::Poll<Result<usize, std::io::Error>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(ref mut stream) => {
+            SocksTcpStream::TcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_write(cx, buf)
             }
-            SocksTcpStream::SmolTcpStream(ref mut stream) => {
+            SocksTcpStream::SmolTcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_write(cx, buf)
             }
         }
@@ -107,8 +107,8 @@ impl AsyncWrite for SocksTcpStream {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), std::io::Error>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(ref mut stream) => std::pin::Pin::new(stream).poll_flush(cx),
-            SocksTcpStream::SmolTcpStream(ref mut stream) => {
+            SocksTcpStream::TcpStream(stream) => std::pin::Pin::new(stream).poll_flush(cx),
+            SocksTcpStream::SmolTcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_flush(cx)
             }
         }
@@ -119,10 +119,10 @@ impl AsyncWrite for SocksTcpStream {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), std::io::Error>> {
         match self.get_mut() {
-            SocksTcpStream::TcpStream(ref mut stream) => {
+            SocksTcpStream::TcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_shutdown(cx)
             }
-            SocksTcpStream::SmolTcpStream(ref mut stream) => {
+            SocksTcpStream::SmolTcpStream(stream) => {
                 std::pin::Pin::new(stream).poll_shutdown(cx)
             }
         }

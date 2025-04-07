@@ -14,7 +14,7 @@ use bytecodec::{ByteCount, Decode, Encode, Eos, Result, SizedEncode, TryTaggedDe
 use stun_codec::macros::track;
 
 macro_rules! impl_decode {
-    ($decoder:ty, $item:ident, $and_then:expr) => {
+    ($decoder:ty, $item:ident, $and_then:expr_2021) => {
         impl Decode for $decoder {
             type Item = $item;
 
@@ -45,7 +45,7 @@ macro_rules! impl_decode {
 }
 
 macro_rules! impl_encode {
-    ($encoder:ty, $item:ty, $map_from:expr) => {
+    ($encoder:ty, $item:ty, $map_from:expr_2021) => {
         impl Encode for $encoder {
             type Item = $item;
 

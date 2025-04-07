@@ -444,7 +444,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin, A: Authentication, C: AsyncTcpConnector>
 
         let auth = self.config.auth.as_ref().context("No auth module")?;
 
-        if let Some(credentials) = auth.authenticate(credentials).await {
+        match auth.authenticate(credentials).await { Some(credentials) => {
             if auth_method == consts::SOCKS5_AUTH_METHOD_PASSWORD {
                 // only the password way expect to write a response at this moment
                 self.inner
@@ -456,7 +456,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin, A: Authentication, C: AsyncTcpConnector>
             info!("User logged successfully.");
 
             return Ok(credentials);
-        } else {
+        } _ => {
             self.inner
                 .write_all(&[1, consts::SOCKS5_AUTH_METHOD_NOT_ACCEPTABLE])
                 .await
@@ -465,7 +465,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin, A: Authentication, C: AsyncTcpConnector>
             return Err(SocksError::AuthenticationRejected(format!(
                 "Authentication, rejected."
             )));
-        }
+        }}
     }
 
     /// Wrapper to principally cover ReplyError types for both functions read & execute request.

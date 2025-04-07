@@ -96,11 +96,11 @@ impl PeerRpcManagerTransport for RpcTransport {
     }
 
     async fn recv(&self) -> Result<ZCPacket, Error> {
-        if let Some(o) = self.packet_recv.lock().await.recv().await {
+        match self.packet_recv.lock().await.recv().await { Some(o) => {
             Ok(o)
-        } else {
+        } _ => {
             Err(Error::Unknown)
-        }
+        }}
     }
 }
 

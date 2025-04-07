@@ -519,7 +519,7 @@ impl SyncedRouteInfo {
             .filter(|x| x.key().peer_id == my_peer_id)
         {
             let (key, entry) = item.pair_mut();
-            if let Some(mut new_entry) = foreign_networks.get_mut(key) {
+            match foreign_networks.get_mut(key) { Some(mut new_entry) => {
                 assert!(!new_entry.foreign_peer_ids.is_empty());
                 if let Some(is_newer) = is_foreign_network_info_newer(&new_entry, entry) {
                     let need_renew = is_newer
@@ -535,12 +535,12 @@ impl SyncedRouteInfo {
                 }
                 drop(new_entry);
                 foreign_networks.remove(key).unwrap();
-            } else if !item.foreign_peer_ids.is_empty() {
+            } _ => if !item.foreign_peer_ids.is_empty() {
                 item.foreign_peer_ids.clear();
                 item.last_update = Some(SystemTime::now().into());
                 item.version = std::cmp::max(item.version + 1, now_version);
                 updated = true;
-            }
+            }}
         }
 
         for item in foreign_networks.iter() {
@@ -1416,13 +1416,13 @@ impl PeerRouteServiceImpl {
         if let Some(peer_infos) = peer_infos {
             let mut peer_info_raws = Vec::new();
             for peer_info in peer_infos.iter() {
-                if let Some(info) = raw_peer_infos.get(&peer_info.peer_id) {
+                match raw_peer_infos.get(&peer_info.peer_id) { Some(info) => {
                     peer_info_raws.push(Value::Message(info.clone()));
-                } else {
+                } _ => {
                     let mut p = DynamicMessage::new(RoutePeerInfo::default().descriptor());
                     p.transcode_from(peer_info).unwrap();
                     peer_info_raws.push(Value::Message(p));
-                }
+                }}
             }
 
             let mut peer_infos = DynamicMessage::new(RoutePeerInfos::default().descriptor());

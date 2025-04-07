@@ -173,12 +173,12 @@ impl ForeignNetworkEntry {
             }
 
             async fn recv(&self) -> Result<ZCPacket, Error> {
-                if let Some(o) = self.packet_recv.lock().await.recv().await {
+                match self.packet_recv.lock().await.recv().await { Some(o) => {
                     tracing::info!("recv rpc packet in foreign network manager rpc transport");
                     Ok(o)
-                } else {
+                } _ => {
                     Err(Error::Unknown)
-                }
+                }}
             }
         }
 
@@ -594,14 +594,14 @@ impl ForeignNetworkManager {
         dst_peer_id: PeerId,
         msg: ZCPacket,
     ) -> Result<(), Error> {
-        if let Some(entry) = self.data.get_network_entry(network_name) {
+        match self.data.get_network_entry(network_name) { Some(entry) => {
             entry
                 .peer_map
                 .send_msg(msg, dst_peer_id, NextHopPolicy::LeastHop)
                 .await
-        } else {
+        } _ => {
             Err(Error::RouteError(Some("network not found".to_string())))
-        }
+        }}
     }
 }
 

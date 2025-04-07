@@ -98,7 +98,7 @@ where
         }
     }
 
-    fn wrap_sink<S: ZCPacketSink + Unpin + 'static>(&self, sink: S) -> impl ZCPacketSink {
+    fn wrap_sink<S: ZCPacketSink + Unpin + 'static>(&self, sink: S) -> impl ZCPacketSink + use<S, T, F> {
         struct SinkWrapper<F, S> {
             sink: S,
             filter: Arc<F>,
@@ -149,7 +149,7 @@ where
         }
     }
 
-    fn wrap_stream<S: ZCPacketStream + Unpin + 'static>(&self, stream: S) -> impl ZCPacketStream {
+    fn wrap_stream<S: ZCPacketStream + Unpin + 'static>(&self, stream: S) -> impl ZCPacketStream + use<S, T, F> {
         struct StreamWrapper<F, S> {
             stream: S,
             filter: Arc<F>,

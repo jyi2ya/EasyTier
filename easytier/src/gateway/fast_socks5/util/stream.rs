@@ -26,7 +26,7 @@ use crate::gateway::fast_socks5::{ReplyError, Result};
 /// ```
 #[macro_export]
 macro_rules! read_exact {
-    ($stream: expr, $array: expr) => {{
+    ($stream: expr_2021, $array: expr_2021) => {{
         let mut x = $array;
         //        $stream
         //            .read_exact(&mut x)

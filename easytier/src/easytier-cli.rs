@@ -912,9 +912,8 @@ impl Service {
     }
 }
 
-#[tokio::main]
 #[tracing::instrument]
-async fn main() -> Result<(), Error> {
+async fn main_fn() -> Result<(), Error> {
     let cli = Cli::parse();
     let client = RpcClient::new(TcpTunnelConnector::new(
         format!("tcp://{}:{}", cli.rpc_portal.ip(), cli.rpc_portal.port())
@@ -1071,16 +1070,10 @@ async fn main() -> Result<(), Error> {
                         format!("{:?}", stun_info.udp_nat_type()).as_str(),
                     ]);
                     ip_list.interface_ipv4s.iter().for_each(|ip| {
-                        builder.push_record(vec![
-                            "Interface IPv4",
-                            ip.to_string().as_str(),
-                        ]);
+                        builder.push_record(vec!["Interface IPv4", ip.to_string().as_str()]);
                     });
                     ip_list.interface_ipv6s.iter().for_each(|ip| {
-                        builder.push_record(vec![
-                            "Interface IPv6",
-                            ip.to_string().as_str(),
-                        ]);
+                        builder.push_record(vec!["Interface IPv6", ip.to_string().as_str()]);
                     });
                     for (idx, l) in node_info.listeners.iter().enumerate() {
                         if l.starts_with("ring") {
@@ -1408,4 +1401,10 @@ mod win_service_manager {
             .set_value::<OsString, _>(service_name, &work_directory.as_os_str().to_os_string())?;
         Ok(())
     }
+}
+
+fn main() -> Result<(), anyhow::Error> {
+    compio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async_compat::Compat::new(main_fn()))
 }

@@ -30,7 +30,7 @@ use tokio::{
     sync::Mutex,
     task::JoinSet,
 };
-use tokio_util::bytes::Bytes;
+use compio::buf::bytes::Bytes;
 use tun::{AbstractDevice, AsyncDevice, Configuration, Layer};
 use zerocopy::{NativeEndian, NetworkEndian};
 

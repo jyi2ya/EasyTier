@@ -12,7 +12,7 @@ use pin_project_lite::pin_project;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use tokio_stream::StreamExt;
+use futures::stream::StreamExt;
 use tokio_util::io::poll_write_buf;
 use zerocopy::FromBytes as _;
 
@@ -435,6 +435,7 @@ pub fn reserve_buf(buf: &mut BytesMut, min_size: usize, max_size: usize) {
     }
 }
 
+#[cfg(test)]
 pub mod tests {
     use std::time::Instant;
 

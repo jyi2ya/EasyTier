@@ -46,10 +46,7 @@ chrono = { version = "0.4.37", features = ["serde"] }
 gethostname = "0.5.0"
 
 futures = { version = "0.3", features = ["bilock", "unstable"] }
-
-tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
-tokio-util = { version = "0.7.9", features = ["codec", "net", "io"] }
+tokio-util = { version = "0.7.9", default-features = false, features = [] }
 
 async-stream = "0.3.5"
 async-trait = "0.1.74"
@@ -70,7 +67,7 @@ rustls = { version = "0.23.0", features = [
 rcgen = { version = "0.12.1", optional = true }
 
 # for websocket
-tokio-websockets = { version = "0.8", optional = true, features = [
+tokio-websockets = { version = "0.8", optional = true, default-features = false, features = [
     "rustls-webpki-roots",
     "client",
     "server",
@@ -203,6 +200,9 @@ http_req = { git = "https://github.com/EasyTier/http_req.git", default-features 
 hickory-resolver = "0.24.4"
 
 bounded_join_set = "0.3.0"
+compio = { version = "0.14.0", default-features = false, features = ["runtime", "bytes"] }
+async-compat = "0.2.4"
+tokio = { version = "1.44.2", default-features = false, features = [] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "windows", target_os = "freebsd"))'.dependencies]
 machine-uid = "0.5.3"
@@ -253,9 +253,8 @@ tokio-socks = "0.5.2"
 
 
 [features]
-default = ["wireguard", "mimalloc", "websocket", "smoltcp", "tun", "socks5"]
+default = ["wireguard", "mimalloc", "websocket", "smoltcp", "tun", "socks5", "io-uring"]
 full = [
-    "quic",
     "websocket",
     "wireguard",
     "mimalloc",
@@ -279,3 +278,5 @@ websocket = [
 ]
 smoltcp = ["dep:smoltcp", "dep:parking_lot"]
 socks5 = ["dep:smoltcp"]
+io-uring = ["compio/io-uring"]
+polling = ["compio/polling"]

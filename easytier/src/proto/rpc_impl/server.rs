@@ -5,9 +5,9 @@ use std::{
 
 use bytes::Bytes;
 use dashmap::DashMap;
+use futures::stream::StreamExt;
 use prost::Message;
 use tokio::{task::JoinSet, time::timeout};
-use tokio_stream::StreamExt;
 
 use crate::{
     common::{PeerId, join_joinset_background},

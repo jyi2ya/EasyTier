@@ -12,11 +12,9 @@ use rand::{Rng, SeedableRng};
 use zerocopy::AsBytes;
 
 use std::net::SocketAddr;
-use tokio::{
-    net::UdpSocket,
-    sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender},
-    task::JoinSet,
-};
+use tokio::net::UdpSocket;
+use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
+use tokio::task::JoinSet;
 
 use tracing::{Instrument, instrument};
 

@@ -946,8 +946,7 @@ async fn run_main(cli: Cli) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
+async fn tokio_main() {
     let locale = sys_locale::get_locale().unwrap_or_else(|| String::from("en-US"));
     rust_i18n::set_locale(&locale);
     setup_panic_handler();
@@ -976,4 +975,9 @@ async fn main() {
         eprintln!("error: {:?}", e);
         std::process::exit(1);
     }
+}
+
+fn main() {
+    let rt = compio::runtime::Runtime::new().unwrap();
+    rt.block_on(async_compat::Compat::new(tokio_main()));
 }

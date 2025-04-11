@@ -226,31 +226,27 @@ impl EasyTierLauncher {
         let fetch_node_info = self.fetch_node_info;
 
         self.thread_handle = Some(std::thread::spawn(move || {
-            let rt = if cfg.get_flags().multi_thread {
-                tokio::runtime::Builder::new_multi_thread()
-                    .worker_threads(2)
-                    .enable_all()
-                    .build()
-            } else {
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-            }
-            .unwrap();
+            let rt = compio::runtime::Runtime::new().unwrap();
 
             let stop_notifier = Arc::new(tokio::sync::Notify::new());
 
             let stop_notifier_clone = stop_notifier.clone();
-            rt.spawn(async move {
+            rt.spawn(async_compat::Compat::new(async move {
                 while !stop_flag.load(std::sync::atomic::Ordering::Relaxed) {
                     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 }
                 stop_notifier_clone.notify_one();
-            });
+            }))
+            .detach();
 
             let notifier = data.instance_stop_notifier.clone();
-            let ret = rt.block_on(tokio::task::LocalSet::default().run_until(
-                Self::easytier_routine(cfg, stop_notifier.clone(), data, fetch_node_info),
+            let ret = rt.block_on(async_compat::Compat::new(
+                tokio::task::LocalSet::default().run_until(Self::easytier_routine(
+                    cfg,
+                    stop_notifier.clone(),
+                    data,
+                    fetch_node_info,
+                )),
             ));
             if let Err(e) = ret {
                 error_msg.write().unwrap().replace(format!("{:?}", e));

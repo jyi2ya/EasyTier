@@ -79,7 +79,7 @@ impl PeerCenterBase {
 
     async fn init_periodic_job<
         T: Send + Sync + 'static + Clone,
-        Fut: Future<Output = Result<u32, rpc_types::error::Error>> + Send + 'static,
+        Fut: Future<Output = Result<u32, rpc_types::error::Error>> + 'static,
     >(
         &self,
         job_ctx: T,
@@ -88,7 +88,6 @@ impl PeerCenterBase {
                 Box<dyn PeerCenterRpc<Controller = BaseController> + Send>,
                 Arc<PeridicJobCtx<T>>,
             ) -> Fut
-            + Send
             + Sync
             + 'static
         ),
@@ -96,7 +95,7 @@ impl PeerCenterBase {
         let my_peer_id = self.peer_mgr.my_peer_id();
         let peer_mgr = self.peer_mgr.clone();
         let lock = self.lock.clone();
-        self.tasks.lock().await.spawn(
+        self.tasks.lock().await.spawn_local(
             async move {
                 let ctx = Arc::new(PeridicJobCtx {
                     peer_mgr: peer_mgr.clone(),
@@ -153,7 +152,7 @@ pub struct PeerCenterInstanceService {
     global_peer_map_digest: Arc<AtomicCell<Digest>>,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl PeerCenterRpc for PeerCenterInstanceService {
     type Controller = BaseController;
 

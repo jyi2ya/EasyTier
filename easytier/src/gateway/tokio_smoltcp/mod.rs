@@ -88,7 +88,7 @@ impl Net {
     /// Creates a new `Net` instance. It panics if the medium is not supported.
     pub fn new<D: device::AsyncDevice + 'static>(device: D, config: NetConfig) -> Net {
         let (net, fut) = Self::new2(device, config);
-        tokio::spawn(fut);
+        tokio::task::spawn_local(fut);
         net
     }
 

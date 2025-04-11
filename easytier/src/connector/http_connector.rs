@@ -292,7 +292,7 @@ mod tests {
         )]
         test_type: HttpRedirectType,
     ) {
-        let http_task = tokio::spawn(run_http_redirect_server(35888, test_type));
+        let http_task = tokio::task::spawn_local(run_http_redirect_server(35888, test_type));
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         let test_url: url::Url = "http://127.0.0.1:35888".parse().unwrap();
         let global_ctx = get_mock_global_ctx();
@@ -304,7 +304,7 @@ mod tests {
         let mut listener = TcpTunnelListener::new("tcp://0.0.0.0:25888".parse().unwrap());
         listener.listen().await.unwrap();
 
-        let task = tokio::spawn(async move {
+        let task = tokio::task::spawn_local(async move {
             let _conn = listener.accept().await.unwrap();
         });
 

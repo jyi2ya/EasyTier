@@ -261,7 +261,7 @@ impl ForeignNetworkEntry {
         let pm_sender = self.pm_packet_sender.lock().await.take().unwrap();
         let network_name = self.network.network_name.clone();
 
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             while let Ok(zc_packet) = recv_packet_from_chan(&mut recv).await {
                 let Some(hdr) = zc_packet.peer_manager_header() else {
                     tracing::warn!("invalid packet, skip");
@@ -515,7 +515,7 @@ impl ForeignNetworkManager {
         let data = self.data.clone();
         let network_name = entry.network.network_name.clone();
         let mut s = entry.global_ctx.subscribe();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             while let Ok(e) = s.recv().await {
                 match &e {
                     GlobalCtxEvent::PeerRemoved(peer_id) => {
@@ -697,7 +697,7 @@ mod tests {
         let (a_ring, b_ring) = crate::tunnel::ring::create_ring_tunnel_pair();
         let b_mgr_copy = pm_center.clone();
         let s_ret =
-            tokio::spawn(async move { b_mgr_copy.add_tunnel_as_server(b_ring, true).await });
+            tokio::task::spawn_local(async move { b_mgr_copy.add_tunnel_as_server(b_ring, true).await });
 
         pma_net1.add_client_tunnel(a_ring).await.unwrap();
 

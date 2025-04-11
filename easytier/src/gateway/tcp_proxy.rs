@@ -229,7 +229,7 @@ impl SmolTcpListener {
                 .await
                 .unwrap();
             let tx = tx.clone();
-            tasks.spawn(async move {
+            tasks.spawn_local(async move {
                 let mut not_listening_count = 0;
                 loop {
                     select! {
@@ -507,7 +507,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
         };
-        tasks.lock().unwrap().spawn(syn_map_cleaner_task);
+        tasks.lock().unwrap().spawn_local(syn_map_cleaner_task);
 
         Ok(())
     }
@@ -529,7 +529,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
 
             let mut smoltcp_stack_receiver =
                 self.smoltcp_stack_receiver.lock().await.take().unwrap();
-            self.tasks.lock().unwrap().spawn(async move {
+            self.tasks.lock().unwrap().spawn_local(async move {
                 while let Some(packet) = smoltcp_stack_receiver.recv().await {
                     tracing::trace!(?packet, "receive from peer send to smoltcp packet");
                     if let Err(e) = stack_sink.send(Ok(packet.payload().to_vec())).await {
@@ -541,7 +541,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
             });
 
             let peer_mgr = self.peer_manager.clone();
-            self.tasks.lock().unwrap().spawn(async move {
+            self.tasks.lock().unwrap().spawn_local(async move {
                 while let Some(data) = stack_stream.recv().await {
                     tracing::trace!(
                         ?data,
@@ -656,7 +656,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
                 let old_nat_val = conn_map.insert(entry_clone.id, entry_clone.clone());
                 assert!(old_nat_val.is_none());
 
-                tasks.lock().unwrap().spawn(Self::connect_to_nat_dst(
+                tasks.lock().unwrap().spawn_local(Self::connect_to_nat_dst(
                     connector.clone(),
                     global_ctx.clone(),
                     tcp_stream,
@@ -669,7 +669,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
         self.tasks
             .lock()
             .unwrap()
-            .spawn(accept_task.instrument(tracing::info_span!("tcp_proxy_listener")));
+            .spawn_local(accept_task.instrument(tracing::info_span!("tcp_proxy_listener")));
 
         Ok(())
     }
@@ -737,7 +737,7 @@ impl<C: NatDstConnector> TcpProxy<C> {
         nat_entry: ArcNatDstEntry,
     ) {
         let nat_entry_clone = nat_entry.clone();
-        nat_entry.tasks.lock().await.spawn(async move {
+        nat_entry.tasks.lock().await.spawn_local(async move {
             let ret = src_tcp_stream.copy_bidirectional(&mut dst_tcp_stream).await;
             tracing::info!(nat_entry = ?nat_entry_clone, ret = ?ret, "nat tcp connection closed");
 
@@ -893,7 +893,7 @@ pub struct TcpProxyRpcService<C: NatDstConnector> {
     tcp_proxy: Weak<TcpProxy<C>>,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<C: NatDstConnector> TcpProxyRpc for TcpProxyRpcService<C> {
     type Controller = BaseController;
     async fn list_tcp_proxy_entry(

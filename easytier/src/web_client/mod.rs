@@ -22,7 +22,7 @@ impl WebClient {
         ));
 
         let controller_clone = controller.clone();
-        let tasks = ScopedTask::from(tokio::spawn(async move {
+        let tasks = ScopedTask::from(tokio::task::spawn_local(async move {
             Self::routine(controller_clone, Box::new(connector)).await;
         }));
 

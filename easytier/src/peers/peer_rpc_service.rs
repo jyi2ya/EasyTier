@@ -12,7 +12,7 @@ pub struct DirectConnectorManagerRpcServer {
     global_ctx: ArcGlobalCtx,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl DirectConnectorRpc for DirectConnectorManagerRpcServer {
     type Controller = BaseController;
 

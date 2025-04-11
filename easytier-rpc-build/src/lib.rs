@@ -177,7 +177,7 @@ impl prost_build::ServiceGenerator for ServiceGenerator {
         write!(
             buf,
             r#"
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 #[auto_impl::auto_impl(&, Arc, Box)]
 pub trait {name} {{
     type Controller: {namespace}::controller::Controller;
@@ -225,7 +225,7 @@ impl<H> {client_name}<H> where H: {namespace}::handler::Handler<Descriptor = {de
     {client_own_methods}
 }}
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<H> {name} for {client_name}<H> where H: {namespace}::handler::Handler<Descriptor = {descriptor_name}> {{
     type Controller = H::Controller;
 
@@ -285,7 +285,7 @@ impl {namespace}::descriptor::ServiceDescriptor for {descriptor_name} {{
     }}
 }}
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<A> {namespace}::handler::Handler for {server_name}<A>
 where
     A: {name} + Clone + Send + Sync + 'static {{

@@ -83,7 +83,7 @@ impl ForeignNetworkClient {
     pub async fn run(&self) {
         let peer_map = Arc::downgrade(&self.peer_map);
         *self.task.lock().unwrap() = Some(
-            tokio::spawn(async move {
+            tokio::task::spawn_local(async move {
                 loop {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     let Some(peer_map) = peer_map.upgrade() else {

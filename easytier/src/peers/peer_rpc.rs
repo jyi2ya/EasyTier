@@ -51,7 +51,7 @@ impl PeerRpcManager {
         let ret = self.bidirect_rpc.run_and_create_tunnel();
         let (mut rx, mut tx) = ret.split();
         let tspt = self.tspt.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             while let Some(Ok(packet)) = rx.next().await {
                 let dst_peer_id = packet.peer_manager_header().unwrap().to_peer_id.into();
                 if let Err(e) = tspt.send(packet, dst_peer_id).await {
@@ -61,7 +61,7 @@ impl PeerRpcManager {
         });
 
         let tspt = self.tspt.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             while let Ok(packet) = tspt.recv().await {
                 if let Err(e) = tx.send(packet).await {
                     tracing::error!("send to rpc tspt error: {:?}", e);

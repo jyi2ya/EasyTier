@@ -233,7 +233,7 @@ impl PeerConnPinger {
         let stopped_clone = stopped.clone();
         let mut controller =
             PingIntervalController::new(self.throughput_stats.clone(), loss_counter.clone());
-        self.tasks.spawn(
+        self.tasks.spawn_local(
             async move {
                 let mut req_seq = 0;
                 loop {
@@ -261,7 +261,7 @@ impl PeerConnPinger {
                     let mut sink = sink.clone();
                     let receiver = ctrl_resp_sender.subscribe();
                     let ping_res_sender = ping_res_sender.clone();
-                    pingpong_tasks.spawn(async move {
+                    pingpong_tasks.spawn_local(async move {
                         let mut receiver = receiver.resubscribe();
                         let pingpong_once_ret = Self::do_pingpong_once(
                             my_node_id,

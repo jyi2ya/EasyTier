@@ -40,11 +40,11 @@ pub async fn create_mock_peer_manager_with_name(network_name: String) -> Arc<Pee
 pub async fn connect_peer_manager(client: Arc<PeerManager>, server: Arc<PeerManager>) {
     let (a_ring, b_ring) = create_ring_tunnel_pair();
     let a_mgr_copy = client.clone();
-    tokio::spawn(async move {
+    tokio::task::spawn_local(async move {
         a_mgr_copy.add_client_tunnel(a_ring).await.unwrap();
     });
     let b_mgr_copy = server.clone();
-    tokio::spawn(async move {
+    tokio::task::spawn_local(async move {
         b_mgr_copy.add_tunnel_as_server(b_ring, true).await.unwrap();
     });
 }

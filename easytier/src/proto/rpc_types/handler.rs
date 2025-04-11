@@ -9,7 +9,7 @@ use bytes;
 ///
 /// This can be an actual implementation of a service, or something that will send a request over
 /// a network to fulfill a request.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait Handler: Clone + Send + Sync + 'static {
     /// The service descriptor for the service whose requests this handler can handle.
     type Descriptor: descriptor::ServiceDescriptor + Default;
@@ -39,7 +39,7 @@ pub trait Handler: Clone + Send + Sync + 'static {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait HandlerExt: Send + Sync + 'static {
     type Controller;
 
@@ -51,7 +51,7 @@ pub trait HandlerExt: Send + Sync + 'static {
     ) -> super::error::Result<bytes::Bytes>;
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl<C: Controller, T: Handler<Controller = C>> HandlerExt for T {
     type Controller = C;
 

@@ -88,7 +88,7 @@ impl Controller {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl WebClientService for Controller {
     type Controller = BaseController;
 

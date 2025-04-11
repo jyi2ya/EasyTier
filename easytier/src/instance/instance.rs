@@ -236,7 +236,7 @@ impl Instance {
         let _ = arc_nic_ctx.lock().await.take();
 
         let mut tasks = JoinSet::new();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             let mut packet_recv = packet_recv.lock().await;
             while let Ok(packet) = recv_packet_from_chan(&mut packet_recv).await {
                 tracing::trace!("packet consumed by mock nic ctx: {:?}", packet);
@@ -260,7 +260,7 @@ impl Instance {
         let global_ctx_c = self.get_global_ctx();
         let nic_ctx = self.nic_ctx.clone();
         let _peer_packet_receiver = self.peer_packet_receiver.clone();
-        tokio::spawn(async move {
+        tokio::task::spawn_local(async move {
             let default_ipv4_addr = Ipv4Inet::new(Ipv4Addr::new(10, 126, 126, 0), 24).unwrap();
             let mut current_dhcp_ip: Option<Ipv4Inet> = None;
             let mut next_sleep_time = 0;
@@ -481,7 +481,7 @@ impl Instance {
             vpn_portal: Weak<Mutex<Box<dyn VpnPortal>>>,
         }
 
-        #[async_trait::async_trait]
+        #[async_trait::async_trait(?Send)]
         impl VpnPortalRpc for VpnPortalRpcService {
             type Controller = BaseController;
 

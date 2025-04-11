@@ -215,7 +215,7 @@ impl Socks5ServerNet {
         let (dev, stack_sink, mut stack_stream) = channel_device::ChannelDevice::new(cap);
 
         let packet_recv = packet_recv.clone();
-        forward_tasks.spawn(async move {
+        forward_tasks.spawn_local(async move {
             let mut smoltcp_stack_receiver = packet_recv.lock().await;
             while let Some(packet) = smoltcp_stack_receiver.recv().await {
                 tracing::trace!(?packet, "receive from peer send to smoltcp packet");
@@ -227,7 +227,7 @@ impl Socks5ServerNet {
             panic!("smoltcp stack sink exited");
         });
 
-        forward_tasks.spawn(async move {
+        forward_tasks.spawn_local(async move {
             while let Some(data) = stack_stream.recv().await {
                 tracing::trace!(
                     ?data,
@@ -288,7 +288,7 @@ impl Socks5ServerNet {
             },
         );
 
-        self.forward_tasks.lock().unwrap().spawn(async move {
+        self.forward_tasks.lock().unwrap().spawn_local(async move {
             match socket.upgrade_to_socks5().await {
                 Ok(_) => {
                     tracing::info!("socks5 handle success");
@@ -439,7 +439,7 @@ impl Socks5Server {
         let entries = self.entries.clone();
         let tcp_forward_task = self.tcp_forward_task.clone();
         let udp_client_map = self.udp_client_map.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             let mut prev_ipv4 = None;
             loop {
                 let mut event_recv = global_ctx.subscribe();
@@ -488,7 +488,7 @@ impl Socks5Server {
             };
 
             let net = self.net.clone();
-            self.tasks.lock().unwrap().spawn(async move {
+            self.tasks.lock().unwrap().spawn_local(async move {
                 loop {
                     match listener.accept().await {
                         Ok((socket, _addr)) => {
@@ -589,7 +589,7 @@ impl Socks5Server {
         let tasks = Arc::new(std::sync::Mutex::new(JoinSet::new()));
         let forward_tasks = tasks.clone();
 
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 let (incoming_socket, _addr) = match listener.accept().await {
                     Ok(result) => result,
@@ -620,7 +620,7 @@ impl Socks5Server {
                 forward_tasks
                     .lock()
                     .unwrap()
-                    .spawn(Self::handle_port_forward_connection(
+                    .spawn_local(Self::handle_port_forward_connection(
                         incoming_socket,
                         connector,
                         dst_addr,
@@ -648,7 +648,7 @@ impl Socks5Server {
         let udp_client_map = self.udp_client_map.clone();
         let udp_forward_task = self.udp_forward_task.clone();
 
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 // we set the max buffer size of smoltcp to 8192, so we need to use a buffer size that is less than 8192 here.
                 let mut buf = vec![0u8; 8192];
@@ -744,7 +744,7 @@ impl Socks5Server {
                         let client_addr = addr;
                         udp_forward_task.insert(
                             udp_client_key.clone(),
-                            ScopedTask::from(tokio::spawn(async move {
+                            ScopedTask::from(tokio::task::spawn_local(async move {
                                 loop {
                                     let mut buf = vec![0u8; 8192];
                                     match socks_udp.recv_from(&mut buf).await {
@@ -791,7 +791,7 @@ impl Socks5Server {
         let udp_client_map = self.udp_client_map.clone();
         let udp_forward_task = self.udp_forward_task.clone();
         let entries = self.entries.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(30)).await;
                 let now = Instant::now();

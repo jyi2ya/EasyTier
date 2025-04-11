@@ -216,7 +216,7 @@ impl UdpSocketArray {
         let intreast_tids = self.intreast_tids.clone();
         let tid_to_socket = self.tid_to_socket.clone();
         socket_map.insert(local_addr, socket.clone());
-        self.tasks.lock().unwrap().spawn(
+        self.tasks.lock().unwrap().spawn_local(
             async move {
                 defer!(socket_map.remove(&local_addr););
                 let mut buf = [0u8; UDP_TUNNEL_HEADER_SIZE + HOLE_PUNCH_PACKET_BODY_LEN as usize];
@@ -383,11 +383,11 @@ impl UdpHolePunchListener {
         let conn_counter = listener.get_conn_counter();
         let mut tasks = JoinSet::new();
 
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             while let Ok(conn) = listener.accept().await {
                 tracing::warn!(?conn, "udp hole punching listener got peer connection");
                 let peer_mgr = peer_mgr.clone();
-                tokio::spawn(async move {
+                tokio::task::spawn_local(async move {
                     if let Err(e) = peer_mgr.add_tunnel_as_server(conn, false).await {
                         tracing::error!(
                             ?e,
@@ -403,7 +403,7 @@ impl UdpHolePunchListener {
         let last_active_time = Arc::new(AtomicCell::new(std::time::Instant::now()));
         let conn_counter_clone = conn_counter.clone();
         let last_active_time_clone = last_active_time.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 if conn_counter_clone.get().unwrap_or(0) != 0 {
@@ -452,7 +452,7 @@ impl PunchHoleServerCommon {
         let listeners = Arc::new(Mutex::new(Vec::<UdpHolePunchListener>::new()));
 
         let l = listeners.clone();
-        tasks.lock().unwrap().spawn(async move {
+        tasks.lock().unwrap().spawn_local(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(5)).await;
                 {

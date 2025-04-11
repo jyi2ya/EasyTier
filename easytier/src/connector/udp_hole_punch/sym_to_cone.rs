@@ -454,7 +454,7 @@ impl PunchSymToConeHoleClient {
         if self.punch_predicablely.load(Ordering::Relaxed) && base_port_for_easy_sym.is_some() {
             let rpc_stub = self.get_rpc_stub(dst_peer_id).await;
             let scoped_punch_task: ScopedTask<()> =
-                tokio::spawn(Self::remote_send_hole_punch_packet_predicable(
+                tokio::task::spawn_local(Self::remote_send_hole_punch_packet_predicable(
                     rpc_stub,
                     base_port_for_easy_sym,
                     my_nat_info,
@@ -481,7 +481,7 @@ impl PunchSymToConeHoleClient {
 
         let rpc_stub = self.get_rpc_stub(dst_peer_id).await;
         let scoped_punch_task: ScopedTask<Option<u32>> =
-            tokio::spawn(Self::remote_send_hole_punch_packet_random(
+            tokio::task::spawn_local(Self::remote_send_hole_punch_packet_random(
                 rpc_stub,
                 remote_mapped_addr.clone(),
                 public_ips.clone(),
@@ -664,7 +664,7 @@ pub mod tests {
         // all these sockets should receive hole punching packet
         for udp in udps.iter().map(Arc::clone) {
             let counter = counter.clone();
-            tokio::spawn(async move {
+            tokio::task::spawn_local(async move {
                 let mut buf = [0u8; 1024];
                 let (len, addr) = udp.recv_from(&mut buf).await.unwrap();
                 println!(

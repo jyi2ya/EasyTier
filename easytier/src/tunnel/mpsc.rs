@@ -45,7 +45,7 @@ impl<T: Tunnel> MpscTunnel<T> {
         let (tx, mut rx) = channel(32);
         let (stream, mut sink) = tunnel.split();
 
-        let task = tokio::spawn(async move {
+        let task = tokio::task::spawn_local(async move {
             loop {
                 if let Err(e) = Self::forward_one_round(&mut rx, &mut sink, send_timeout).await {
                     tracing::error!(?e, "forward error");
@@ -153,7 +153,7 @@ mod tests {
         let mut connector = TcpTunnelConnector::new("tcp://127.0.0.1:11014".parse().unwrap());
 
         listener.listen().await.unwrap();
-        let t1 = tokio::spawn(async move {
+        let t1 = tokio::task::spawn_local(async move {
             let t = listener.accept().await.unwrap();
             let (mut stream, _sink) = t.split();
             let now = tokio::time::Instant::now();
@@ -183,7 +183,7 @@ mod tests {
         let mpsc_tunnel = MpscTunnel::new(tunnel, None);
 
         let sink1 = mpsc_tunnel.get_sink();
-        let t2 = tokio::spawn(async move {
+        let t2 = tokio::task::spawn_local(async move {
             for i in 0..1000000 {
                 tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 let a = sink1
@@ -203,7 +203,7 @@ mod tests {
         });
 
         let sink2 = mpsc_tunnel.get_sink();
-        let t3 = tokio::spawn(async move {
+        let t3 = tokio::task::spawn_local(async move {
             for i in 0..1000000 {
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
                 let a = sink2
@@ -222,7 +222,7 @@ mod tests {
             tracing::info!("t3 exit");
         });
 
-        let t4 = tokio::spawn(async move {
+        let t4 = tokio::task::spawn_local(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             tracing::info!("closing");
             drop(mpsc_tunnel);

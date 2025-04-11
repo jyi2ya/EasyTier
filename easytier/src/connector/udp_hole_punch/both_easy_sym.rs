@@ -85,7 +85,7 @@ impl PunchBothEasySymHoleServer {
         let mut punched = vec![];
         let common = self.common.clone();
 
-        let task = tokio::spawn(async move {
+        let task = tokio::task::spawn_local(async move {
             let mut listeners = Vec::new();
             let start_time = Instant::now();
             let wait_time_ms = request.wait_time_ms.min(8000);
@@ -375,7 +375,7 @@ pub mod tests {
         // all these sockets should receive hole punching packet
         for udp in udps.iter().map(Arc::clone) {
             let counter = counter.clone();
-            tokio::spawn(async move {
+            tokio::task::spawn_local(async move {
                 let mut buf = [0u8; 1024];
                 let (len, addr) = udp.recv_from(&mut buf).await.unwrap();
                 println!(

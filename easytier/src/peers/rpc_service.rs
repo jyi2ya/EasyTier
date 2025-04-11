@@ -67,7 +67,7 @@ impl PeerManagerRpcService {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl PeerManageRpc for PeerManagerRpcService {
     type Controller = BaseController;
     async fn list_peer(

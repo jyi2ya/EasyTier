@@ -48,7 +48,7 @@ pub fn join_joinset_background<T: Debug + Send + Sync + 'static>(
 ) {
     let js = Arc::downgrade(&js);
     let o = origin.clone();
-    tokio::spawn(
+    tokio::task::spawn_local(
         async move {
             while js.strong_count() > 0 {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -144,14 +144,14 @@ mod tests {
     async fn test_join_joinset_backgroud() {
         let js = Arc::new(Mutex::new(JoinSet::<()>::new()));
         join_joinset_background(js.clone(), "TEST".to_owned());
-        js.try_lock().unwrap().spawn(async {
+        js.try_lock().unwrap().spawn_local(async {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         });
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         assert!(js.try_lock().unwrap().is_empty());
 
         for _ in 0..5 {
-            js.try_lock().unwrap().spawn(async {
+            js.try_lock().unwrap().spawn_local(async {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             });
             tokio::task::yield_now().await;
@@ -160,7 +160,7 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
         for _ in 0..5 {
-            js.try_lock().unwrap().spawn(async {
+            js.try_lock().unwrap().spawn_local(async {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             });
             tokio::task::yield_now().await;

@@ -70,7 +70,7 @@ impl BidirectRpcManager {
 
         let e_clone = self.error.clone();
         let r_clone = self.running.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             defer! {
                 r_clone.store(false, std::sync::atomic::Ordering::Relaxed);
             }
@@ -100,7 +100,7 @@ impl BidirectRpcManager {
         let recv_timeout = self.rx_timeout;
         let e_clone = self.error.clone();
         let r_clone = self.running.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             defer! {
                 r_clone.store(false, std::sync::atomic::Ordering::Relaxed);
             }

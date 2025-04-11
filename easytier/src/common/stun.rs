@@ -379,7 +379,7 @@ impl StunClientBuilder {
 
         let udp_clone = udp.clone();
         let stun_packet_sender_clone = stun_packet_sender.clone();
-        task_set.spawn(
+        task_set.spawn_local(
             async move {
                 let mut buf = [0; 1620];
                 tracing::trace!("start stun packet listener");
@@ -642,17 +642,17 @@ impl UdpNatTypeDetector {
         let mut stun_task_set = JoinSet::new();
 
         for stun_server in stun_servers.iter() {
-            stun_task_set.spawn(
+            stun_task_set.spawn_local(
                 client_builder
                     .new_stun_client(*stun_server)
                     .bind_request(false, false),
             );
-            stun_task_set.spawn(
+            stun_task_set.spawn_local(
                 client_builder
                     .new_stun_client(*stun_server)
                     .bind_request(false, true),
             );
-            stun_task_set.spawn(
+            stun_task_set.spawn_local(
                 client_builder
                     .new_stun_client(*stun_server)
                     .bind_request(true, true),
@@ -829,7 +829,7 @@ impl StunInfoCollector {
         let udp_nat_test_result = self.udp_nat_test_result.clone();
         let udp_test_time = self.nat_test_result_time.clone();
         let redetect_notify = self.redetect_notify.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 let servers = stun_servers.read().unwrap().clone();
                 // use first three and random choose one from the rest
@@ -889,7 +889,7 @@ impl StunInfoCollector {
         let stun_servers = self.stun_servers_v6.clone();
         let stored_ipv6 = self.public_ipv6.clone();
         let redetect_notify = self.redetect_notify.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 let servers = stun_servers.read().unwrap().clone();
                 Self::get_public_ipv6(&servers)
@@ -969,13 +969,13 @@ mod tests {
         let mut udp_server2 = UdpTunnelListener::new("udp://0.0.0.0:55535".parse().unwrap());
 
         let mut tasks = JoinSet::new();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             udp_server1.listen().await.unwrap();
             loop {
                 udp_server1.accept().await.unwrap();
             }
         });
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             udp_server2.listen().await.unwrap();
             loop {
                 udp_server2.accept().await.unwrap();
@@ -1002,7 +1002,7 @@ mod tests {
     async fn test_v4_stun() {
         let mut udp_server = UdpTunnelListener::new("udp://0.0.0.0:55355".parse().unwrap());
         let mut tasks = JoinSet::new();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             udp_server.listen().await.unwrap();
             loop {
                 udp_server.accept().await.unwrap();
@@ -1020,7 +1020,7 @@ mod tests {
     async fn test_v6_stun() {
         let mut udp_server = UdpTunnelListener::new("udp://[::]:55355".parse().unwrap());
         let mut tasks = JoinSet::new();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             udp_server.listen().await.unwrap();
             loop {
                 udp_server.accept().await.unwrap();

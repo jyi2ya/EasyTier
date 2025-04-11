@@ -569,12 +569,15 @@ impl TryFrom<&Cli> for TomlConfigLoader {
             .unwrap_or_else(|_| panic!("failed to parse local bind addr {}", example_str));
 
             let dst_addr = port_forward
-                    .path_segments()
-                    .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str))
-                    .next()
-                    .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str)).to_string()
-            .parse()
-            .unwrap_or_else(|_| panic!("failed to parse remote destination addr {}", example_str));
+                .path_segments()
+                .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str))
+                .next()
+                .unwrap_or_else(|| panic!("remote destination addr is missing {}", example_str))
+                .to_string()
+                .parse()
+                .unwrap_or_else(|_| {
+                    panic!("failed to parse remote destination addr {}", example_str)
+                });
 
             let port_forward_item = PortForwardConfig {
                 bind_addr,
@@ -648,7 +651,7 @@ fn peer_conn_info_to_string(p: proto::cli::PeerConnInfo) -> String {
 
 #[tracing::instrument]
 pub fn handle_event(mut events: EventBusSubscriber) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
+    tokio::task::spawn_local(async move {
         while let Ok(e) = events.recv().await {
             match e {
                 GlobalCtxEvent::PeerAdded(p) => {
@@ -967,7 +970,9 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    if let Err(e) = run_main(cli).await {
+    let task = tokio::task::LocalSet::default();
+
+    if let Err(e) = task.run_until(run_main(cli)).await {
         eprintln!("error: {:?}", e);
         std::process::exit(1);
     }

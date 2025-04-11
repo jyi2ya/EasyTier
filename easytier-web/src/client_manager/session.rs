@@ -68,7 +68,7 @@ struct SessionRpcService {
     data: SharedSessionData,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl WebServerService for SessionRpcService {
     type Controller = BaseController;
 
@@ -149,7 +149,7 @@ impl Session {
 
         let data = self.data.read().await;
         self.run_network_on_start_task.replace(
-            tokio::spawn(Self::run_network_on_start(
+            tokio::task::spawn_local(Self::run_network_on_start(
                 data.heartbeat_waiter(),
                 data.storage.clone(),
                 self.scoped_rpc_client(),

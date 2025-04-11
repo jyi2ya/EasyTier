@@ -334,7 +334,7 @@ pub mod tests {
     async fn ws_accept_wss() {
         let mut listener = WSTunnelListener::new("wss://0.0.0.0:25558".parse().unwrap());
         listener.listen().await.unwrap();
-        let j = tokio::spawn(async move {
+        let j = tokio::task::spawn_local(async move {
             let _ = listener.accept().await;
         });
 

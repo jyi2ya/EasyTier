@@ -179,7 +179,7 @@ impl IPCollector {
                 Self::do_collect_local_ip_addrs(self.net_ns.clone()).await;
             let net_ns = self.net_ns.clone();
             let stun_info_collector = self.stun_info_collector.clone();
-            task.spawn(async move {
+            task.spawn_local(async move {
                 loop {
                     let ip_addrs = Self::do_collect_local_ip_addrs(net_ns.clone()).await;
                     *cached_ip_list.write().await = ip_addrs;
@@ -189,7 +189,7 @@ impl IPCollector {
             });
 
             let cached_ip_list = self.cached_ip_list.clone();
-            task.spawn(async move {
+            task.spawn_local(async move {
                 loop {
                     let stun_info = stun_info_collector.get_stun_info();
                     for ip in stun_info.public_ip.iter() {

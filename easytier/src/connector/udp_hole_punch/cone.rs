@@ -164,7 +164,7 @@ impl PunchConeHoleClient {
 
         send_from_local().await?;
 
-        let scoped_punch_task: ScopedTask<()> = tokio::spawn(async move {
+        let scoped_punch_task: ScopedTask<()> = tokio::task::spawn_local(async move {
             if let Err(e) = rpc_stub
                 .send_punch_packet_cone(
                     BaseController {

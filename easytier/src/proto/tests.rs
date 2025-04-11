@@ -13,7 +13,7 @@ pub struct GreetingService {
     pub prefix: String,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Greeting for GreetingService {
     type Controller = RpcController;
     async fn say_hello(
@@ -65,7 +65,7 @@ impl TestContext {
             client.get_transport_sink(),
         );
 
-        tasks.lock().unwrap().spawn(async move {
+        tasks.lock().unwrap().spawn_local(async move {
             while let Some(Ok(packet)) = rx.next().await {
                 if let Err(err) = tx.send(packet).await {
                     println!("{:?}", err);
@@ -78,7 +78,7 @@ impl TestContext {
             client.get_transport_stream(),
             rpc_server.get_transport_sink(),
         );
-        tasks.lock().unwrap().spawn(async move {
+        tasks.lock().unwrap().spawn_local(async move {
             while let Some(Ok(packet)) = rx.next().await {
                 if let Err(err) = tx.send(packet).await {
                     println!("{:?}", err);
@@ -217,7 +217,7 @@ async fn rpc_tunnel_stuck_test() {
         client.get_transport_sink(),
     );
 
-    rpc_tasks.lock().unwrap().spawn(async move {
+    rpc_tasks.lock().unwrap().spawn_local(async move {
         while let Some(Ok(packet)) = rx.next().await {
             if let Err(err) = tx.send(packet).await {
                 println!("{:?}", err);
@@ -232,7 +232,7 @@ async fn rpc_tunnel_stuck_test() {
     for _ in 0..RING_TUNNEL_CAP + 15 {
         let out =
             client.scoped_client::<GreetingClientFactory<RpcController>>(1, 1, "test".to_string());
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             let mut ctrl = RpcController::default();
             ctrl.timeout_ms = 1000;
 
@@ -252,7 +252,7 @@ async fn rpc_tunnel_stuck_test() {
         client.get_transport_stream(),
         rpc_server.get_transport_sink(),
     );
-    rpc_tasks.lock().unwrap().spawn(async move {
+    rpc_tasks.lock().unwrap().spawn_local(async move {
         while let Some(Ok(packet)) = rx.next().await {
             if let Err(err) = tx.send(packet).await {
                 println!("{:?}", err);
@@ -349,7 +349,7 @@ async fn test_bidirect_rpc_manager() {
     let server_test_done = Arc::new(Notify::new());
     let server_test_done_clone = server_test_done.clone();
     let mut tcp_listener = TcpTunnelListener::new("tcp://0.0.0.0:55443".parse().unwrap());
-    let s_task: ScopedTask<()> = tokio::spawn(async move {
+    let s_task: ScopedTask<()> = tokio::task::spawn_local(async move {
         tcp_listener.listen().await.unwrap();
         let tunnel = tcp_listener.accept().await.unwrap();
         s.run_with_tunnel(tunnel);

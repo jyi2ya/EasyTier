@@ -80,7 +80,7 @@ impl Session {
         let client = rpc_mgr
             .rpc_client()
             .scoped_client::<WebServerServiceClientFactory<BaseController>>(1, 1, "".to_string());
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             loop {
                 tick.tick().await;
 

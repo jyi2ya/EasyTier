@@ -605,7 +605,7 @@ impl NicCtx {
         let Some(mgr) = self.peer_mgr.upgrade() else {
             return Err(anyhow::anyhow!("peer manager not available").into());
         };
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             while let Some(ret) = stream.next().await {
                 if ret.is_err() {
                     tracing::error!("read from nic failed: {:?}", ret);
@@ -621,7 +621,7 @@ impl NicCtx {
 
     fn do_forward_peers_to_nic(&mut self, mut sink: Pin<Box<dyn ZCPacketSink>>) {
         let channel = self.peer_packet_receiver.clone();
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             // unlock until coroutine finished
             let mut channel = channel.lock().await;
             while let Ok(packet) = recv_packet_from_chan(&mut channel).await {
@@ -648,7 +648,7 @@ impl NicCtx {
         let ifcfg = nic.get_ifcfg();
         let ifname = nic.ifname().to_owned();
 
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             let mut cur_proxy_cidrs = vec![];
             loop {
                 let mut proxy_cidrs = vec![];

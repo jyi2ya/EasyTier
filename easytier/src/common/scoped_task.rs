@@ -59,7 +59,7 @@ mod tests {
     async fn drop_while_not_waiting_for_join() {
         let dropped = Arc::new(RwLock::new(false));
         let sentry = Sentry(dropped.clone());
-        let task = ScopedTask::from(tokio::spawn(async move {
+        let task = ScopedTask::from(tokio::task::spawn_local(async move {
             let _sentry = sentry;
             pending::<()>().await
         }));
@@ -74,8 +74,8 @@ mod tests {
     async fn drop_while_waiting_for_join() {
         let dropped = Arc::new(RwLock::new(false));
         let sentry = Sentry(dropped.clone());
-        let handle = tokio::spawn(async move {
-            ScopedTask::from(tokio::spawn(async move {
+        let handle = tokio::task::spawn_local(async move {
+            ScopedTask::from(tokio::task::spawn_local(async move {
                 let _sentry = sentry;
                 pending::<()>().await
             }))
@@ -92,7 +92,7 @@ mod tests {
     #[tokio::test]
     async fn no_drop_only_join() {
         assert_eq!(
-            ScopedTask::from(tokio::spawn(async {
+            ScopedTask::from(tokio::task::spawn_local(async {
                 yield_now().await;
                 5
             }))
@@ -106,7 +106,7 @@ mod tests {
     async fn manually_abort_before_drop() {
         let dropped = Arc::new(RwLock::new(false));
         let sentry = Sentry(dropped.clone());
-        let task = ScopedTask::from(tokio::spawn(async move {
+        let task = ScopedTask::from(tokio::task::spawn_local(async move {
             let _sentry = sentry;
             pending::<()>().await
         }));
@@ -121,7 +121,7 @@ mod tests {
     async fn manually_abort_then_join() {
         let dropped = Arc::new(RwLock::new(false));
         let sentry = Sentry(dropped.clone());
-        let task = ScopedTask::from(tokio::spawn(async move {
+        let task = ScopedTask::from(tokio::task::spawn_local(async move {
             let _sentry = sentry;
             pending::<()>().await
         }));

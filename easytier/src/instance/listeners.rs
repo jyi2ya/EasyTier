@@ -209,7 +209,7 @@ impl<H: TunnelHandlerForListener + Send + Sync + 'static + Debug> ListenerManage
                 tracing::info!(ret = ?ret, "conn accepted");
                 let peer_manager = peer_manager.clone();
                 let global_ctx = global_ctx.clone();
-                tokio::spawn(async move {
+                tokio::task::spawn_local(async move {
                     let server_ret = peer_manager.handle_tunnel(ret).await;
                     if let Err(e) = &server_ret {
                         global_ctx.issue_event(GlobalCtxEvent::ConnectionError(
@@ -235,7 +235,7 @@ impl<H: TunnelHandlerForListener + Send + Sync + 'static + Debug> ListenerManage
                     .with_context(|| format!("failed to listen on {}", l.local_url()))?;
             }
 
-            self.tasks.spawn(Self::run_listener(
+            self.tasks.spawn_local(Self::run_listener(
                 listener.creator_fn.clone(),
                 self.peer_manager.clone(),
                 self.global_ctx.clone(),

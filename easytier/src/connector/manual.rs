@@ -85,8 +85,8 @@ impl ManualConnectorManager {
         };
 
         ret.tasks
-            .spawn(Self::conn_mgr_reconn_routine(ret.data.clone()));
-        ret.tasks.spawn(Self::conn_mgr_handle_event_routine(
+            .spawn_local(Self::conn_mgr_reconn_routine(ret.data.clone()));
+        ret.tasks.spawn_local(Self::conn_mgr_handle_event_routine(
             ret.data.clone(),
             event_subscriber,
         ));
@@ -205,7 +205,7 @@ impl ManualConnectorManager {
                         let insert_succ = data.reconnecting.insert(dead_url.clone());
                         assert!(insert_succ);
 
-                        tokio::spawn(async move {
+                        tokio::task::spawn_local(async move {
                             let reconn_ret = Self::conn_reconnect(data_clone.clone(), dead_url.clone(), connector.clone()).await;
                             sender.send(reconn_ret).await.unwrap();
 
@@ -402,7 +402,7 @@ impl ManualConnectorManager {
 #[derive(Clone)]
 pub struct ConnectorManagerRpcService(pub Arc<ManualConnectorManager>);
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl ConnectorManageRpc for ConnectorManagerRpcService {
     type Controller = BaseController;
 

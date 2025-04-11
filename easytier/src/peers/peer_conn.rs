@@ -273,7 +273,7 @@ impl PeerConn {
         let _conn_info = self.get_conn_info();
         let conn_info_for_instrument = self.get_conn_info();
 
-        self.tasks.spawn(
+        self.tasks.spawn_local(
             async move {
                 tracing::info!("start recving peer conn packet");
                 let mut task_ret = Ok(());
@@ -338,7 +338,7 @@ impl PeerConn {
         let close_event_sender = self.close_event_sender.clone().unwrap();
         let conn_id = self.conn_id;
 
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             pingpong.pingpong().await;
 
             tracing::warn!(?pingpong, "pingpong task exit");
@@ -509,7 +509,7 @@ mod tests {
         c_peer.start_recv_loop(create_packet_recv_chan().0).await;
 
         let throughput = c_peer.throughput.clone();
-        let _t = ScopedTask::from(tokio::spawn(async move {
+        let _t = ScopedTask::from(tokio::task::spawn_local(async move {
             // if not drop both, we mock some rx traffic for client peer to test pinger
             while !drop_both {
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -545,7 +545,7 @@ mod tests {
     async fn close_tunnel_during_handshake() {
         let (c, s) = create_ring_tunnel_pair();
         let mut c_peer = PeerConn::new(new_peer_id(), get_mock_global_ctx(), Box::new(c));
-        let j = tokio::spawn(async move {
+        let j = tokio::task::spawn_local(async move {
             tokio::time::sleep(Duration::from_secs(1)).await;
             drop(s);
         });

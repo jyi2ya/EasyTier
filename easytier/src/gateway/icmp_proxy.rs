@@ -225,7 +225,7 @@ impl IcmpProxy {
 
     async fn start_nat_table_cleaner(self: &Arc<Self>) -> Result<(), Error> {
         let nat_table = self.nat_table.clone();
-        self.tasks.lock().await.spawn(
+        self.tasks.lock().await.spawn_local(
             async move {
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -249,7 +249,7 @@ impl IcmpProxy {
         }
 
         let peer_manager = self.peer_manager.clone();
-        self.tasks.lock().await.spawn(
+        self.tasks.lock().await.spawn_local(
             async move {
                 while let Some(msg) = receiver.recv().await {
                     let hdr = msg.peer_manager_header().unwrap();
@@ -264,7 +264,7 @@ impl IcmpProxy {
         );
 
         let ip_resembler = self.ip_resemmbler.clone();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 ip_resembler.remove_expired_packets();

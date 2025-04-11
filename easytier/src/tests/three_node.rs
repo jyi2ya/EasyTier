@@ -498,7 +498,7 @@ pub async fn proxy_three_node_disconnect_test(#[values("tcp", "wg")] proto: &str
     tracing::info!("inst3 peer id: {:?}", insts[2].peer_id());
     tracing::info!("inst4 peer id: {:?}", inst4.peer_id());
 
-    let task = tokio::spawn(async move {
+    let task = tokio::task::spawn_local(async move {
         for _ in 1..=2 {
             // inst4 should be in inst1's route list
             wait_for_condition(
@@ -516,7 +516,7 @@ pub async fn proxy_three_node_disconnect_test(#[values("tcp", "wg")] proto: &str
             .await;
 
             set_link_status("net_d", false);
-            let _t = ScopedTask::from(tokio::spawn(async move {
+            let _t = ScopedTask::from(tokio::task::spawn_local(async move {
                 // do some ping in net_a to trigger net_c pingpong
                 loop {
                     ping_test("net_a", "10.144.144.4", Some(1)).await;
@@ -594,11 +594,11 @@ pub async fn udp_broadcast_test() {
 
     let mut tasks = JoinSet::new();
     let counter = Arc::new(AtomicU32::new(0));
-    tasks.spawn(udp_broadcast_responder(
+    tasks.spawn_local(udp_broadcast_responder(
         NetNS::new(Some("net_b".into())),
         counter.clone(),
     ));
-    tasks.spawn(udp_broadcast_responder(
+    tasks.spawn_local(udp_broadcast_responder(
         NetNS::new(Some("net_c".into())),
         counter.clone(),
     ));
@@ -789,7 +789,7 @@ pub async fn socks5_vpn_portal(#[values("10.144.144.1", "10.144.144.3")] dst_add
 
     let buf_clone = buf.clone();
     let dst_addr_clone = dst_addr.to_owned();
-    let task = tokio::spawn(async move {
+    let task = tokio::task::spawn_local(async move {
         let net_ns = if dst_addr_clone == "10.144.144.1" {
             NetNS::new(Some("net_a".into()))
         } else {

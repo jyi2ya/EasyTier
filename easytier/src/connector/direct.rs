@@ -145,7 +145,7 @@ impl DirectConnectorManager {
     pub fn run_as_client(&mut self) {
         let data = self.data.clone();
         let my_peer_id = self.data.peer_manager.my_peer_id();
-        self.tasks.spawn(
+        self.tasks.spawn_local(
             async move {
                 loop {
                     let peers = data.peer_manager.list_peers().await;
@@ -156,7 +156,7 @@ impl DirectConnectorManager {
                         {
                             continue;
                         }
-                        tasks.spawn(Self::do_try_direct_connect(data.clone(), peer_id));
+                        tasks.spawn_local(Self::do_try_direct_connect(data.clone(), peer_id));
                     }
 
                     while let Some(task_ret) = tasks.join_next().await {
@@ -283,7 +283,7 @@ impl DirectConnectorManager {
                         .for_each(|ip| {
                             let mut addr = (*listener).clone();
                             if addr.set_host(Some(ip.to_string().as_str())).is_ok() {
-                                tasks.spawn(Self::try_connect_to_ip(
+                                tasks.spawn_local(Self::try_connect_to_ip(
                                     data.clone(),
                                     dst_peer_id.clone(),
                                     addr.to_string(),
@@ -298,7 +298,7 @@ impl DirectConnectorManager {
                             }
                         });
                 } else if !s_addr.ip().is_loopback() || TESTING.load(Ordering::Relaxed) {
-                    tasks.spawn(Self::try_connect_to_ip(
+                    tasks.spawn_local(Self::try_connect_to_ip(
                         data.clone(),
                         dst_peer_id.clone(),
                         listener.to_string(),
@@ -329,7 +329,7 @@ impl DirectConnectorManager {
                                 .set_host(Some(format!("[{}]", ip.to_string()).as_str()))
                                 .is_ok()
                             {
-                                tasks.spawn(Self::try_connect_to_ip(
+                                tasks.spawn_local(Self::try_connect_to_ip(
                                     data.clone(),
                                     dst_peer_id.clone(),
                                     addr.to_string(),
@@ -344,7 +344,7 @@ impl DirectConnectorManager {
                             }
                         });
                 } else if !s_addr.ip().is_loopback() || TESTING.load(Ordering::Relaxed) {
-                    tasks.spawn(Self::try_connect_to_ip(
+                    tasks.spawn_local(Self::try_connect_to_ip(
                         data.clone(),
                         dst_peer_id.clone(),
                         listener.to_string(),

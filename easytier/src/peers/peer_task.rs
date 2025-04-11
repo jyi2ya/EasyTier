@@ -60,7 +60,7 @@ where
     }
 
     pub fn start(&self) {
-        let task = tokio::spawn(Self::main_loop(
+        let task = tokio::task::spawn_local(Self::main_loop(
             self.launcher.clone(),
             self.data.clone(),
             self.run_signal.clone(),

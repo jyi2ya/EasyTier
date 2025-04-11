@@ -414,8 +414,8 @@ impl WgPeer {
         self.sink.lock().unwrap().replace(sink);
 
         self.tasks
-            .spawn(Self::handle_packet_from_me(stream, data.clone()));
-        self.tasks.spawn(data.routine_task());
+            .spawn_local(Self::handle_packet_from_me(stream, data.clone()));
+        self.tasks.spawn_local(data.routine_task());
 
         ctunnel
     }
@@ -498,7 +498,7 @@ impl WgTunnelListener {
         let mut tasks = JoinSet::new();
 
         let peer_map_clone = peer_map.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             loop {
                 peer_map_clone.retain(|_, peer| {
                     peer.access_time.load().elapsed().as_secs() < 61 && !peer.stopped()
@@ -573,7 +573,7 @@ impl TunnelListener for WgTunnelListener {
             .set_port(Some(self.udp.as_ref().unwrap().local_addr()?.port()))
             .unwrap();
 
-        self.tasks.spawn(Self::handle_udp_incoming(
+        self.tasks.spawn_local(Self::handle_udp_incoming(
             self.get_udp_socket(),
             self.config.clone(),
             self.conn_send.take().unwrap(),
@@ -658,7 +658,7 @@ impl WgTunnelConnector {
         let tunnel = wg_peer.start_and_get_tunnel();
         let data = wg_peer.data.as_ref().unwrap().clone();
         let mut sink = wg_peer.sink.lock().unwrap().take().unwrap();
-        wg_peer.tasks.spawn(async move {
+        wg_peer.tasks.spawn_local(async move {
             data.handle_one_packet_from_peer(&mut sink, &buf[..n]).await;
             loop {
                 let mut buf = vec![0u8; MAX_PACKET];
@@ -846,7 +846,7 @@ pub mod tests {
 
         const CONN_COUNT: usize = 10;
 
-        tokio::spawn(async move {
+        tokio::task::spawn_local(async move {
             let mut tunnels = vec![];
             for _ in 0..CONN_COUNT {
                 let mut connector = WgTunnelConnector::new(

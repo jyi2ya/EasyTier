@@ -278,7 +278,7 @@ impl UdpConnection {
         close_event_sender: UdpCloseEventSender,
     ) -> Self {
         let s = socket.clone();
-        let forward_task = tokio::spawn(async move {
+        let forward_task = tokio::task::spawn_local(async move {
             let close_event_sender = close_event_sender;
             let err = forward_from_ring_to_udp(ring_recv, &s, &dst_addr, conn_id).await;
             if let Err(e) = close_event_sender.send((dst_addr, err)) {
@@ -408,12 +408,12 @@ impl UdpTunnelListenerData {
     fn do_forward_one_packet_to_conn(&self, zc_packet: ZCPacket, addr: SocketAddr) {
         let header = zc_packet.udp_tunnel_header().unwrap();
         if header.msg_type == UdpPacketType::Syn as u8 {
-            tokio::spawn(Self::handle_new_connect(self.clone(), addr, zc_packet));
+            tokio::task::spawn_local(Self::handle_new_connect(self.clone(), addr, zc_packet));
         } else if is_stun_packet(header.as_bytes()) {
             // ignore stun packet
             tracing::debug!("udp forward packet ignore stun packet");
             let socket = self.socket.as_ref().unwrap().clone();
-            tokio::spawn(async move {
+            tokio::task::spawn_local(async move {
                 let ret = respond_stun_packet(socket, addr, zc_packet.inner().to_vec()).await;
                 if let Err(e) = ret {
                     tracing::error!(?e, "udp respond stun packet error");
@@ -500,11 +500,11 @@ impl TunnelListener for UdpTunnelListener {
         self.forward_tasks
             .lock()
             .unwrap()
-            .spawn(self.data.clone().do_forward_task());
+            .spawn_local(self.data.clone().do_forward_task());
 
         let sock_map = Arc::downgrade(&self.data.sock_map.clone());
         let mut close_recv = self.close_event_recv.take().unwrap();
-        self.forward_tasks.lock().unwrap().spawn(async move {
+        self.forward_tasks.lock().unwrap().spawn_local(async move {
             while let Some((dst_addr, err)) = close_recv.recv().await {
                 if let Some(err) = err {
                     tracing::error!(?err, "udp close event error");
@@ -667,7 +667,7 @@ impl UdpTunnelConnector {
         );
 
         let socket_clone = socket.clone();
-        tokio::spawn(
+        tokio::task::spawn_local(
             async move {
                 tokio::select! {
                     _ = close_event_recv.recv() => {
@@ -875,7 +875,7 @@ mod tests {
         let mut listener = UdpTunnelListener::new("udp://0.0.0.0:5557".parse().unwrap());
         listener.listen().await.unwrap();
 
-        let _lis = tokio::spawn(async move {
+        let _lis = tokio::task::spawn_local(async move {
             loop {
                 let ret = listener.accept().await.unwrap();
                 assert_eq!(
@@ -886,7 +886,7 @@ mod tests {
                         .to_string(),
                     listener.local_url().to_string()
                 );
-                tokio::spawn(async move { _tunnel_echo_server(ret, false).await });
+                tokio::task::spawn_local(async move { _tunnel_echo_server(ret, false).await });
             }
         });
 
@@ -896,20 +896,20 @@ mod tests {
         let t1 = connector1.connect().await.unwrap();
         let t2 = connector2.connect().await.unwrap();
 
-        tokio::spawn(timeout(
+        tokio::task::spawn_local(timeout(
             Duration::from_secs(2),
             send_random_data_to_socket(t1.info().unwrap().local_addr.unwrap().into()),
         ));
-        tokio::spawn(timeout(
+        tokio::task::spawn_local(timeout(
             Duration::from_secs(2),
             send_random_data_to_socket(t1.info().unwrap().remote_addr.unwrap().into()),
         ));
-        tokio::spawn(timeout(
+        tokio::task::spawn_local(timeout(
             Duration::from_secs(2),
             send_random_data_to_socket(t2.info().unwrap().remote_addr.unwrap().into()),
         ));
 
-        let sender1 = tokio::spawn(async move {
+        let sender1 = tokio::task::spawn_local(async move {
             let (mut stream, mut sink) = t1.split();
 
             for i in 0..10 {
@@ -923,7 +923,7 @@ mod tests {
             }
         });
 
-        let sender2 = tokio::spawn(async move {
+        let sender2 = tokio::task::spawn_local(async move {
             let (mut stream, mut sink) = t2.split();
 
             for i in 0..10 {
@@ -1021,7 +1021,7 @@ mod tests {
     async fn test_conn_counter() {
         let mut listener = UdpTunnelListener::new("udp://0.0.0.0:5556".parse().unwrap());
         let mut connector = UdpTunnelConnector::new("udp://127.0.0.1:5556".parse().unwrap());
-        tokio::spawn(async move {
+        tokio::task::spawn_local(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
             let _c1 = connector.connect().await.unwrap();
             let _c2 = connector.connect().await.unwrap();

@@ -83,7 +83,7 @@ impl Server {
         let packet_merges = self.packet_mergers.clone();
         let reg = self.registry.clone();
         let t = tasks.clone();
-        tasks.lock().unwrap().spawn(async move {
+        tasks.lock().unwrap().spawn_local(async move {
             let mut mpsc = mpsc;
             let mut rx = mpsc.get_stream();
 
@@ -120,7 +120,7 @@ impl Server {
                 match ret {
                     Ok(Some(packet)) => {
                         packet_merges.remove(&key);
-                        t.lock().unwrap().spawn(Self::handle_rpc(
+                        t.lock().unwrap().spawn_local(Self::handle_rpc(
                             mpsc.get_sink(),
                             packet,
                             reg.clone(),
@@ -135,7 +135,7 @@ impl Server {
         });
 
         let packet_mergers = self.packet_mergers.clone();
-        tasks.lock().unwrap().spawn(async move {
+        tasks.lock().unwrap().spawn_local(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
                 packet_mergers.retain(|_, v| v.last_updated().elapsed().as_secs() < 10);

@@ -92,7 +92,7 @@ impl Client {
         let mut tasks = self.tasks.lock().unwrap();
 
         let peer_infos = self.peer_info.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(30)).await;
                 let now = std::time::Instant::now();
@@ -108,7 +108,7 @@ impl Client {
 
         let mut rx = self.mpsc.lock().unwrap().get_stream();
         let inflight_requests = self.inflight_requests.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             while let Some(packet) = rx.next().await {
                 if let Err(err) = packet {
                     tracing::error!(?err, "Failed to receive packet");
@@ -185,7 +185,7 @@ impl Client {
             }
         }
 
-        #[async_trait::async_trait]
+        #[async_trait::async_trait(?Send)]
         impl<F: RpcClientFactory> Handler for HandlerImpl<F> {
             type Descriptor = F::Descriptor;
             type Controller = F::Controller;

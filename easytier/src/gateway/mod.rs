@@ -38,7 +38,7 @@ impl CidrSet {
     fn run_cidr_updater(&mut self) {
         let global_ctx = self.global_ctx.clone();
         let cidr_set = self.cidr_set.clone();
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             let mut last_cidrs = vec![];
             loop {
                 let cidrs = global_ctx.get_proxy_cidrs();

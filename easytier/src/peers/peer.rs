@@ -53,7 +53,7 @@ impl Peer {
         let conns_copy = conns.clone();
         let shutdown_notifier_copy = shutdown_notifier.clone();
         let global_ctx_copy = global_ctx.clone();
-        let close_event_listener = tokio::spawn(
+        let close_event_listener = tokio::task::spawn_local(
             async move {
                 loop {
                     select! {
@@ -93,7 +93,7 @@ impl Peer {
 
         let conns_copy = conns.clone();
         let default_conn_id_copy = default_conn_id.clone();
-        let default_conn_id_clear_task = ScopedTask::from(tokio::spawn(async move {
+        let default_conn_id_clear_task = ScopedTask::from(tokio::task::spawn_local(async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 if conns_copy.len() > 1 {
@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(remote_peer.list_peer_conns().await.len(), 1);
 
         let close_handler =
-            tokio::spawn(async move { local_peer.close_peer_conn(&local_conn_id).await });
+            tokio::task::spawn_local(async move { local_peer.close_peer_conn(&local_conn_id).await });
 
         // wait for remote peer conn close
         timeout(std::time::Duration::from_secs(5), async {

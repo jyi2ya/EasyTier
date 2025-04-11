@@ -256,7 +256,7 @@ impl KcpProxySrc {
         let output_receiver = kcp_endpoint.output_receiver().unwrap();
         let mut tasks = JoinSet::new();
 
-        tasks.spawn(handle_kcp_output(
+        tasks.spawn_local(handle_kcp_output(
             peer_manager.clone(),
             output_receiver,
             true,
@@ -315,7 +315,7 @@ impl KcpProxyDst {
 
         let mut tasks = JoinSet::new();
         let output_receiver = kcp_endpoint.output_receiver().unwrap();
-        tasks.spawn(handle_kcp_output(
+        tasks.spawn_local(handle_kcp_output(
             peer_manager.clone(),
             output_receiver,
             false,
@@ -387,7 +387,7 @@ impl KcpProxyDst {
         let kcp_endpoint = self.kcp_endpoint.clone();
         let global_ctx = self.peer_manager.get_global_ctx().clone();
         let proxy_entries = self.proxy_entries.clone();
-        self.tasks.spawn(async move {
+        self.tasks.spawn_local(async move {
             while let Ok(conn) = kcp_endpoint.accept().await {
                 let stream = KcpStream::new(&kcp_endpoint, conn)
                     .ok_or(anyhow::anyhow!("failed to create kcp stream"))
@@ -395,7 +395,7 @@ impl KcpProxyDst {
 
                 let global_ctx = global_ctx.clone();
                 let proxy_entries = proxy_entries.clone();
-                tokio::spawn(async move {
+                tokio::task::spawn_local(async move {
                     let _ = Self::handle_one_in_stream(stream, global_ctx, proxy_entries).await;
                 });
             }
@@ -422,7 +422,7 @@ impl KcpProxyDstRpcService {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl TcpProxyRpc for KcpProxyDstRpcService {
     type Controller = BaseController;
     async fn list_tcp_proxy_entry(

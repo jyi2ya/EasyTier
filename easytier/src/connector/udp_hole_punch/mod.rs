@@ -70,7 +70,7 @@ impl UdpHolePunchServer {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl UdpHolePunchRpc for UdpHolePunchServer {
     type Controller = BaseController;
 
@@ -460,9 +460,11 @@ impl PeerTaskLauncher for UdpHolePunchPeerTaskLauncher {
         let data = data.clone();
         let punch_method = item.my_nat_type.get_punch_hole_method(item.dst_nat_type);
         match punch_method {
-            UdpPunchClientMethod::ConeToCone => tokio::spawn(data.cone_to_cone(item)),
-            UdpPunchClientMethod::SymToCone => tokio::spawn(data.sym_to_cone(item)),
-            UdpPunchClientMethod::EasySymToEasySym => tokio::spawn(data.both_easy_sym(item)),
+            UdpPunchClientMethod::ConeToCone => tokio::task::spawn_local(data.cone_to_cone(item)),
+            UdpPunchClientMethod::SymToCone => tokio::task::spawn_local(data.sym_to_cone(item)),
+            UdpPunchClientMethod::EasySymToEasySym => {
+                tokio::task::spawn_local(data.both_easy_sym(item))
+            }
             _ => unreachable!(),
         }
     }

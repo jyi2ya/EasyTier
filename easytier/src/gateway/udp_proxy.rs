@@ -143,7 +143,7 @@ impl UdpNatEntry {
         let (s, mut r) = tachyonix::channel(128);
 
         let self_clone = self.clone();
-        let recv_task = ScopedTask::from(tokio::spawn(async move {
+        let recv_task = ScopedTask::from(tokio::task::spawn_local(async move {
             let mut cur_buf = BytesMut::new();
             loop {
                 if self_clone
@@ -184,7 +184,7 @@ impl UdpNatEntry {
         }));
 
         let self_clone = self.clone();
-        let send_task = ScopedTask::from(tokio::spawn(async move {
+        let send_task = ScopedTask::from(tokio::task::spawn_local(async move {
             let mut ip_id = 1;
             while let Ok((mut packet, len, src_socket)) = r.recv().await {
                 let SocketAddr::V4(mut src_v4) = src_socket else {
@@ -318,7 +318,7 @@ impl UdpProxy {
                 .forward_task
                 .lock()
                 .await
-                .replace(tokio::spawn(UdpNatEntry::forward_task(
+                .replace(tokio::task::spawn_local(UdpNatEntry::forward_task(
                     nat_entry.clone(),
                     self.sender.clone(),
                     self.global_ctx.get_ipv4().map(|x| x.address())?,
@@ -398,7 +398,7 @@ impl UdpProxy {
 
         // clean up nat table
         let nat_table = self.nat_table.clone();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(15)).await;
                 nat_table.retain(|_, v| {
@@ -414,7 +414,7 @@ impl UdpProxy {
         });
 
         let ip_resembler = self.ip_resemmbler.clone();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 ip_resembler.remove_expired_packets();
@@ -424,7 +424,7 @@ impl UdpProxy {
         // forward packets to peer manager
         let mut receiver = self.receiver.lock().await.take().unwrap();
         let peer_manager = self.peer_manager.clone();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             while let Ok(msg) = receiver.recv().await {
                 let to_peer_id: PeerId = msg.peer_manager_header().unwrap().to_peer_id.get();
                 tracing::trace!(?msg, ?to_peer_id, "udp nat packet response send");

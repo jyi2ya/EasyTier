@@ -218,12 +218,12 @@ impl WireGuardImpl {
         let tasks = Arc::downgrade(&self.tasks.clone());
         let peer_mgr = self.peer_mgr.clone();
         let wg_peer_ip_table = self.wg_peer_ip_table.clone();
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             while let Ok(t) = l.accept().await {
                 let Some(tasks) = tasks.upgrade() else {
                     break;
                 };
-                tasks.lock().unwrap().spawn(Self::handle_incoming_conn(
+                tasks.lock().unwrap().spawn_local(Self::handle_incoming_conn(
                     t,
                     peer_mgr.clone(),
                     wg_peer_ip_table.clone(),

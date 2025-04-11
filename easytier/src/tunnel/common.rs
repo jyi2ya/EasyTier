@@ -435,7 +435,6 @@ pub fn reserve_buf(buf: &mut BytesMut, min_size: usize, max_size: usize) {
     }
 }
 
-#[cfg(test)]
 pub mod tests {
     use std::time::Instant;
 
@@ -512,7 +511,7 @@ pub mod tests {
             })
             .await;
 
-        let lis = tokio::spawn(async move {
+        let lis = tokio::task::spawn_local(async move {
             let ret = listener.accept().await.unwrap();
             println!("accept: {:?}", ret.info());
             assert_eq!(
@@ -562,7 +561,7 @@ pub mod tests {
     {
         listener.listen().await.unwrap();
 
-        let lis = tokio::spawn(async move {
+        let lis = tokio::task::spawn_local(async move {
             let ret = listener.accept().await.unwrap();
             _tunnel_echo_server(ret, false).await
         });
@@ -577,7 +576,7 @@ pub mod tests {
             send_buf.put_i128(rand::random::<i128>());
         }
 
-        let r = tokio::spawn(async move {
+        let r = tokio::task::spawn_local(async move {
             let now = Instant::now();
             let count = recv
                 .try_fold(0usize, |mut ret, _| async move {

@@ -1604,7 +1604,7 @@ fn get_raw_peer_infos(req_raw_input: &mut bytes::Bytes) -> Option<Vec<DynamicMes
     Some(infos)
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl OspfRouteRpc for RouteSessionManager {
     type Controller = BaseController;
     async fn sync_route_info(
@@ -1723,12 +1723,14 @@ impl RouteSessionManager {
 
     fn start_session_task(&self, session: &SyncRouteSession) {
         if !session.task.is_running() {
-            session.task.set_task(tokio::spawn(Self::session_task(
-                self.peer_rpc.clone(),
-                self.service_impl.clone(),
-                session.dst_peer_id,
-                self.sync_now_broadcast.subscribe(),
-            )));
+            session
+                .task
+                .set_task(tokio::task::spawn_local(Self::session_task(
+                    self.peer_rpc.clone(),
+                    self.service_impl.clone(),
+                    session.dst_peer_id,
+                    self.sync_now_broadcast.subscribe(),
+                )));
         }
     }
 
@@ -2054,7 +2056,7 @@ impl PeerRoute {
         self.tasks
             .lock()
             .unwrap()
-            .spawn(Self::update_my_peer_info_routine(
+            .spawn_local(Self::update_my_peer_info_routine(
                 self.service_impl.clone(),
                 self.session_mgr.clone(),
             ));
@@ -2062,7 +2064,7 @@ impl PeerRoute {
         self.tasks
             .lock()
             .unwrap()
-            .spawn(Self::maintain_session_tasks(
+            .spawn_local(Self::maintain_session_tasks(
                 self.session_mgr.clone(),
                 self.service_impl.clone(),
             ));
@@ -2070,7 +2072,7 @@ impl PeerRoute {
         self.tasks
             .lock()
             .unwrap()
-            .spawn(Self::clear_expired_peer(self.service_impl.clone()));
+            .spawn_local(Self::clear_expired_peer(self.service_impl.clone()));
     }
 }
 

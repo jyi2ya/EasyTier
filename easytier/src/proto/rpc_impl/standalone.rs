@@ -54,7 +54,7 @@ impl<L: TunnelListener + 'static> StandAloneServer<L> {
             let registry = registry.clone();
             let inflight_server = inflight.clone();
             inflight_server.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            tasks.lock().unwrap().spawn(async move {
+            tasks.lock().unwrap().spawn_local(async move {
                 let server =
                     BidirectRpcManager::new().set_rx_timeout(Some(Duration::from_secs(60)));
                 server.rpc_server().registry().replace_registry(&registry);
@@ -74,7 +74,7 @@ impl<L: TunnelListener + 'static> StandAloneServer<L> {
 
         let inflight_server = self.inflight_server.clone();
 
-        self.tasks.lock().unwrap().spawn(async move {
+        self.tasks.lock().unwrap().spawn_local(async move {
             loop {
                 let ret = Self::serve_loop(
                     &mut listener,

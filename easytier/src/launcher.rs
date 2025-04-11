@@ -106,7 +106,7 @@ impl EasyTierLauncher {
         let peer_packet_receiver = instance.get_peer_packet_receiver();
         let arc_tun_fd = data.tun_fd.clone();
 
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             let mut old_tun_fd = arc_tun_fd.read().unwrap().clone();
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -142,7 +142,7 @@ impl EasyTierLauncher {
         // Subscribe to global context events
         let global_ctx = instance.get_global_ctx();
         let data_c = data.clone();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             let mut receiver = global_ctx.subscribe();
             while let Ok(event) = receiver.recv().await {
                 Self::handle_easytier_event(event, &data_c).await;
@@ -155,7 +155,7 @@ impl EasyTierLauncher {
             let global_ctx_c = instance.get_global_ctx();
             let peer_mgr_c = peer_mgr.clone();
             let vpn_portal = instance.get_vpn_portal_inst();
-            tasks.spawn(async move {
+            tasks.spawn_local(async move {
                 loop {
                     // Update TUN Device Name
                     *data_c.tun_dev_name.write().unwrap() =
@@ -249,11 +249,8 @@ impl EasyTierLauncher {
             });
 
             let notifier = data.instance_stop_notifier.clone();
-            let ret = rt.block_on(Self::easytier_routine(
-                cfg,
-                stop_notifier.clone(),
-                data,
-                fetch_node_info,
+            let ret = rt.block_on(tokio::task::LocalSet::default().run_until(
+                Self::easytier_routine(cfg, stop_notifier.clone(), data, fetch_node_info),
             ));
             if let Err(e) = ret {
                 error_msg.write().unwrap().replace(format!("{:?}", e));

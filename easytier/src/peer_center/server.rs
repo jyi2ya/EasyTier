@@ -64,7 +64,7 @@ pub struct PeerCenterServer {
 impl PeerCenterServer {
     pub fn new(my_node_id: PeerId) -> Self {
         let mut tasks = JoinSet::new();
-        tasks.spawn(async move {
+        tasks.spawn_local(async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                 PeerCenterServer::clean_outdated_peer(my_node_id).await;
@@ -102,7 +102,7 @@ impl PeerCenterServer {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl PeerCenterRpc for PeerCenterServer {
     type Controller = BaseController;
 

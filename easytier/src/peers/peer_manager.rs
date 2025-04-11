@@ -345,7 +345,7 @@ impl PeerManager {
     async fn start_peer_conn_close_event_handler(&self) {
         let dmap = self.directly_connected_conn_map.clone();
         let mut event_recv = self.global_ctx.subscribe();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             while let Ok(event) = event_recv.recv().await {
                 match event {
                     GlobalCtxEvent::PeerConnRemoved(info) => {
@@ -471,7 +471,7 @@ impl PeerManager {
         let foreign_mgr = self.foreign_network_manager.clone();
         let encryptor = self.encryptor.clone();
         let compress_algo = self.data_compress_algo;
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             tracing::trace!("start_peer_recv");
             while let Ok(ret) = recv_packet_from_chan(&mut recv).await {
                 let Err(mut ret) =
@@ -911,7 +911,7 @@ impl PeerManager {
     async fn run_clean_peer_without_conn_routine(&self) {
         let peer_map = self.peers.clone();
         let dmap = self.directly_connected_conn_map.clone();
-        self.tasks.lock().await.spawn(async move {
+        self.tasks.lock().await.spawn_local(async move {
             loop {
                 peer_map.clean_peer_without_conn().await;
                 dmap.retain(|p, v| peer_map.has_peer(*p) && !v.is_empty());
@@ -1089,7 +1089,7 @@ mod tests {
     ) {
         server.listen().await.unwrap();
 
-        tokio::spawn(async move {
+        tokio::task::spawn_local(async move {
             client.set_bind_addrs(vec![]);
             client_mgr.try_direct_connect(client).await.unwrap();
         });

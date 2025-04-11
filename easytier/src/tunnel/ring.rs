@@ -368,7 +368,7 @@ mod tests {
     async fn abort_ring_stream() {
         let (_stunnel, ctunnel) = create_ring_tunnel_pair();
         let mut stream = ctunnel.split().0;
-        let task = tokio::spawn(async move {
+        let task = tokio::task::spawn_local(async move {
             let _ = stream.next().await;
         });
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;

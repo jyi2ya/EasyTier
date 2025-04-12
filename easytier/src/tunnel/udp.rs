@@ -9,6 +9,7 @@ use bytes::BytesMut;
 use dashmap::DashMap;
 use futures::{StreamExt, stream::FuturesUnordered};
 use rand::{Rng, SeedableRng};
+use send_wrapper::SendWrapper;
 use zerocopy::AsBytes;
 
 use compio::{BufResult, net::UdpSocket};
@@ -27,7 +28,6 @@ use crate::{
         packet_def::{UdpPacketType, ZCPacket, ZCPacketType},
         ring::RingTunnel,
     },
-    utils::make_future_send,
 };
 
 use super::{
@@ -767,8 +767,7 @@ impl UdpTunnelConnector {
                 continue;
             }
             let socket = UdpSocket::from_std(socket2_socket.into())?;
-            let fut = self.try_connect_with_socket(Arc::new(socket), addr);
-            let fut = make_future_send(fut);
+            let fut = SendWrapper::new(self.try_connect_with_socket(Arc::new(socket), addr));
 
             futures.push(fut);
         }
@@ -785,9 +784,9 @@ impl super::TunnelConnector for UdpTunnelConnector {
             self.ip_version,
         )?;
         if self.bind_addrs.is_empty() || addr.is_ipv6() {
-            make_future_send(self.connect_with_default_bind(addr)).await
+            SendWrapper::new(self.connect_with_default_bind(addr)).await
         } else {
-            make_future_send(self.connect_with_custom_bind(addr)).await
+            SendWrapper::new(self.connect_with_custom_bind(addr)).await
         }
     }
 

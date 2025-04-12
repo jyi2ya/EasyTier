@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
-use tokio::net::UdpSocket;
+use compio::net::UdpSocket;
 
 use crate::{
     common::{PeerId, scoped_task::ScopedTask, stun::StunInfoCollectorTrait},
@@ -70,7 +70,11 @@ impl PunchConeHoleServer {
             for _ in 0..request.packet_count_per_batch {
                 let udp_packet =
                     new_hole_punch_packet(request.transaction_id, HOLE_PUNCH_PACKET_BODY_LEN);
-                if let Err(e) = listener.send_to(&udp_packet.into_bytes(), &dest_addr).await {
+                if let Err(e) = listener
+                    .send_to(udp_packet.into_bytes(), &dest_addr)
+                    .await
+                    .0
+                {
                     tracing::error!(?e, "failed to send hole punch packet to dest addr");
                 }
             }
@@ -155,7 +159,7 @@ impl PunchConeHoleClient {
         let send_from_local = || async {
             udp_array
                 .send_with_all(
-                    &new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes(),
+                    new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes(),
                     remote_mapped_addr.clone().into(),
                 )
                 .await

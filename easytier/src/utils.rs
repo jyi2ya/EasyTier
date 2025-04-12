@@ -1,4 +1,6 @@
 use anyhow::Context;
+use futures::FutureExt;
+use std::ops::DerefMut;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -156,6 +158,13 @@ pub fn setup_panic_handler() {
             .and_then(|mut f| f.write_all(format!("{:?}\n{:#?}", info, backtrace).as_bytes()));
         std::process::exit(1);
     }));
+}
+
+pub fn make_future_send<'a, F: 'a + Future>(fut: F) -> impl 'a + Future<Output = F::Output> {
+    let fut = fut.boxed_local();
+    let mut fut = send_wrapper::SendWrapper::new(fut);
+    let fut = std::future::poll_fn(move |cx| fut.deref_mut().as_mut().poll(cx));
+    fut
 }
 
 #[cfg(test)]

@@ -4,10 +4,11 @@ use std::{
     time::Duration,
 };
 
+use compio::{BufResult, buf::IoBuf, net::UdpSocket};
 use crossbeam::atomic::AtomicCell;
 use dashmap::{DashMap, DashSet};
 use rand::seq::SliceRandom as _;
-use tokio::{net::UdpSocket, sync::Mutex, task::JoinSet};
+use tokio::{sync::Mutex, task::JoinSet};
 use tracing::{Instrument, Level, instrument};
 use zerocopy::FromBytes as _;
 
@@ -219,10 +220,14 @@ impl UdpSocketArray {
         self.tasks.lock().unwrap().spawn_local(
             async move {
                 defer!(socket_map.remove(&local_addr););
-                let mut buf = [0u8; UDP_TUNNEL_HEADER_SIZE + HOLE_PUNCH_PACKET_BODY_LEN as usize];
                 tracing::trace!(?local_addr, "udp socket added");
                 loop {
-                    let Ok((len, addr)) = socket.recv_from(&mut buf).await else {
+                    let BufResult(Ok((len, addr)), buf) = socket
+                        .recv_from(
+                            [0u8; UDP_TUNNEL_HEADER_SIZE + HOLE_PUNCH_PACKET_BODY_LEN as usize],
+                        )
+                        .await
+                    else {
                         break;
                     };
 
@@ -282,7 +287,11 @@ impl UdpSocketArray {
     }
 
     #[instrument(err)]
-    pub async fn send_with_all(&self, data: &[u8], addr: SocketAddr) -> Result<(), anyhow::Error> {
+    pub async fn send_with_all(
+        &self,
+        data: impl IoBuf + std::fmt::Debug,
+        addr: SocketAddr,
+    ) -> Result<(), anyhow::Error> {
         tracing::info!(?addr, "sending hole punching packet");
 
         let sockets = self
@@ -291,9 +300,12 @@ impl UdpSocketArray {
             .map(|s| s.value().clone())
             .collect::<Vec<_>>();
 
+        let mut data1 = data;
         for socket in sockets.iter() {
             for _ in 0..3 {
-                socket.send_to(data, addr).await?;
+                let BufResult(result, data) = socket.send_to(data1, addr).await;
+                result?;
+                data1 = data;
             }
         }
 
@@ -567,7 +579,7 @@ pub(crate) async fn send_symmetric_hole_punch_packet(
             let addr = SocketAddr::V4(SocketAddrV4::new(*pub_ip, port));
             for _ in 0..3 {
                 let packet = new_hole_punch_packet(transaction_id, HOLE_PUNCH_PACKET_BODY_LEN);
-                udp.send_to(&packet.into_bytes(), addr).await?;
+                udp.send_to(packet.into_bytes(), addr).await.0?;
             }
             sent_packets += 1;
         }

@@ -11,8 +11,8 @@ use futures::{StreamExt, stream::FuturesUnordered};
 use rand::{Rng, SeedableRng};
 use zerocopy::AsBytes;
 
+use compio::{BufResult, net::UdpSocket};
 use std::net::SocketAddr;
-use tokio::net::UdpSocket;
 use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinSet;
 
@@ -23,10 +23,11 @@ use crate::{
     common::{join_joinset_background, scoped_task::ScopedTask},
     tunnel::{
         build_url_from_socket_addr,
-        common::{TunnelWrapper, reserve_buf},
+        common::TunnelWrapper,
         packet_def::{UdpPacketType, ZCPacket, ZCPacketType},
         ring::RingTunnel,
     },
+    utils::make_future_send,
 };
 
 use super::{
@@ -146,8 +147,9 @@ async fn respond_stun_packet(
 
     if !change_req {
         socket
-            .send_to(&rsp_buf, addr.clone())
+            .send_to(rsp_buf, addr.clone())
             .await
+            .0
             .with_context(|| "send stun response error")?;
     } else {
         // send from a new udp socket
@@ -156,7 +158,7 @@ async fn respond_stun_packet(
         } else {
             UdpSocket::bind("[::]:0").await?
         };
-        socket.send_to(&rsp_buf, addr.clone()).await?;
+        socket.send_to(rsp_buf, addr.clone()).await.0?;
     }
 
     tracing::debug!(?addr, ?req_msg, ?change_req, "udp respond stun packet done");
@@ -217,7 +219,7 @@ async fn forward_from_ring_to_udp(
 
         let buf = packet.into_bytes();
         tracing::trace!(?udp_payload_len, ?buf, "udp forward from ring to udp");
-        let ret = socket.send_to(&buf, &addr).await;
+        let ret = socket.send_to(buf, &addr).await.0;
         if ret.is_err() {
             return Some(TunnelError::IOError(ret.unwrap_err()));
         } else if ret.unwrap() == 0 {
@@ -230,10 +232,10 @@ async fn udp_recv_from_socket_forward_task<F>(socket: Arc<UdpSocket>, allow_stun
 where
     F: FnMut(ZCPacket, SocketAddr) -> (),
 {
-    let mut buf = BytesMut::new();
     loop {
-        reserve_buf(&mut buf, UDP_DATA_MTU, UDP_DATA_MTU * 16);
-        let (dg_size, addr) = match socket.recv_buf_from(&mut buf).await {
+        let buf = BytesMut::with_capacity(UDP_DATA_MTU * 16);
+        let BufResult(result, mut buf) = socket.recv_from(buf).await;
+        let (dg_size, addr) = match result {
             Ok(v) => v,
             Err(e) => {
                 tracing::error!(?e, "udp recv from socket error");
@@ -363,7 +365,7 @@ impl UdpTunnelListenerData {
         let socket = self.socket.as_ref().unwrap().clone();
 
         let sack_buf = new_sack_packet(conn_id, magic).into_bytes();
-        if let Err(e) = socket.send_to(&sack_buf, remote_addr).await {
+        if let Err(e) = socket.send_to(sack_buf, remote_addr).await.0 {
             tracing::error!(?e, "udp send sack packet error");
             return;
         }
@@ -579,14 +581,12 @@ impl UdpTunnelConnector {
         conn_id: u32,
         magic: u64,
     ) -> Result<SocketAddr, TunnelError> {
-        let mut buf = BytesMut::new();
-        buf.reserve(UDP_DATA_MTU);
+        let buf = BytesMut::with_capacity(UDP_DATA_MTU);
 
-        let (usize, recv_addr) = tokio::time::timeout(
-            tokio::time::Duration::from_secs(3),
-            socket.recv_buf_from(&mut buf),
-        )
-        .await??;
+        let BufResult(result, mut buf) =
+            tokio::time::timeout(tokio::time::Duration::from_secs(3), socket.recv_from(buf))
+                .await?;
+        let (usize, recv_addr) = result?;
         let zc_packet = get_zcpacket_from_buf(buf.split(), false)?;
         if recv_addr != addr {
             tracing::warn!(?recv_addr, ?addr, ?usize, "udp wait sack addr not match");
@@ -719,7 +719,8 @@ impl UdpTunnelConnector {
         let conn_id = rand::random();
         let magic = rand::random();
         let udp_packet = new_syn_packet(conn_id, magic).into_bytes();
-        let ret = socket.send_to(&udp_packet, &addr).await?;
+        let BufResult(result, udp_packet) = socket.send_to(udp_packet, &addr).await;
+        let ret = result?;
         tracing::warn!(?udp_packet, ?ret, "udp send syn");
 
         // wait sack
@@ -766,7 +767,10 @@ impl UdpTunnelConnector {
                 continue;
             }
             let socket = UdpSocket::from_std(socket2_socket.into())?;
-            futures.push(self.try_connect_with_socket(Arc::new(socket), addr));
+            let fut = self.try_connect_with_socket(Arc::new(socket), addr);
+            let fut = make_future_send(fut);
+
+            futures.push(fut);
         }
         wait_for_connect_futures(futures).await
     }
@@ -781,9 +785,9 @@ impl super::TunnelConnector for UdpTunnelConnector {
             self.ip_version,
         )?;
         if self.bind_addrs.is_empty() || addr.is_ipv6() {
-            self.connect_with_default_bind(addr).await
+            make_future_send(self.connect_with_default_bind(addr)).await
         } else {
-            self.connect_with_custom_bind(addr).await
+            make_future_send(self.connect_with_custom_bind(addr)).await
         }
     }
 
@@ -865,7 +869,7 @@ mod tests {
         loop {
             let mut buf = vec![0u8; 100];
             rand::thread_rng().fill(&mut buf[..]);
-            socket.send(&buf).await.unwrap();
+            socket.send(buf).await.unwrap();
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
     }

@@ -9,8 +9,10 @@ use std::{
 };
 
 use anyhow::Context;
+use compio::buf::IoBuf;
+use compio::net::UdpSocket;
 use rand::{Rng, seq::SliceRandom};
-use tokio::{net::UdpSocket, sync::RwLock};
+use tokio::sync::RwLock;
 use tracing::Level;
 
 use crate::{
@@ -345,7 +347,7 @@ impl PunchSymToConeHoleClient {
 
     async fn check_hole_punch_result<T>(
         udp_array: &Arc<UdpSocketArray>,
-        packet: &[u8],
+        packet: impl IoBuf + std::fmt::Debug,
         tid: u32,
         remote_mapped_addr: crate::proto::common::SocketAddr,
         scoped_punch_task: &ScopedTask<T>,
@@ -353,9 +355,10 @@ impl PunchSymToConeHoleClient {
         // no matter what the result is, we should check if we received any hole punching packet
         let mut ret_tunnel: Option<Box<dyn Tunnel>> = None;
         let mut finish_time: Option<Instant> = None;
+        let packet = Arc::new(packet);
         while finish_time.is_none() || finish_time.as_ref().unwrap().elapsed().as_millis() < 1000 {
             udp_array
-                .send_with_all(&packet, remote_mapped_addr.into())
+                .send_with_all(Arc::clone(&packet), remote_mapped_addr.into())
                 .await?;
 
             tokio::time::sleep(Duration::from_millis(200)).await;
@@ -441,14 +444,14 @@ impl PunchSymToConeHoleClient {
         }
 
         let tid = rand::thread_rng().r#gen();
-        let packet = new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes();
+        let packet = Arc::new(new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes());
         udp_array.add_intreast_tid(tid);
         defer! { udp_array.remove_intreast_tid(tid);}
 
         let port_index = *last_port_idx as u32;
         let base_port_for_easy_sym = self.get_base_port_for_easy_sym(my_nat_info).await;
         udp_array
-            .send_with_all(&packet, remote_mapped_addr.into())
+            .send_with_all(Arc::clone(&packet), remote_mapped_addr.into())
             .await?;
 
         if self.punch_predicablely.load(Ordering::Relaxed) && base_port_for_easy_sym.is_some() {
@@ -465,7 +468,7 @@ impl PunchSymToConeHoleClient {
                 .into();
             let ret_tunnel = Self::check_hole_punch_result(
                 &udp_array,
-                &packet,
+                Arc::clone(&packet),
                 tid,
                 remote_mapped_addr.clone(),
                 &scoped_punch_task,
@@ -492,7 +495,7 @@ impl PunchSymToConeHoleClient {
             .into();
         let ret_tunnel = Self::check_hole_punch_result(
             &udp_array,
-            &packet,
+            packet,
             tid,
             remote_mapped_addr.clone(),
             &scoped_punch_task,

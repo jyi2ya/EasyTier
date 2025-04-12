@@ -80,8 +80,9 @@ impl PunchBothEasySymHoleServer {
         udp_array.add_intreast_tid(transaction_id);
         let peer_mgr = self.common.get_peer_mgr();
 
-        let punch_packet =
-            new_hole_punch_packet(transaction_id, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes();
+        let punch_packet = Arc::new(
+            new_hole_punch_packet(transaction_id, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes(),
+        );
         let mut punched = vec![];
         let common = self.common.clone();
 
@@ -92,7 +93,7 @@ impl PunchBothEasySymHoleServer {
             while start_time.elapsed() < Duration::from_millis(wait_time_ms as u64) {
                 if let Err(e) = udp_array
                     .send_with_all(
-                        &punch_packet,
+                        Arc::clone(&punch_packet),
                         SocketAddr::V4(SocketAddrV4::new(
                             public_ips.into(),
                             request.dst_port_num as u16,
@@ -144,7 +145,10 @@ impl PunchBothEasySymHoleServer {
 
                 for p in &punched {
                     let (socket, remote_addr) = p;
-                    let send_remote_ret = socket.send_to(&punch_packet, remote_addr).await;
+                    let send_remote_ret = socket
+                        .send_to(Arc::clone(&punch_packet), remote_addr)
+                        .await
+                        .0;
                     tracing::debug!(
                         ?send_remote_ret,
                         ?socket,
@@ -273,7 +277,7 @@ impl PunchBothEasySymHoleClient {
         while now.elapsed().as_millis() < (REMOTE_WAIT_TIME_MS + 1000).into() {
             udp_array
                 .send_with_all(
-                    &new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes(),
+                    new_hole_punch_packet(tid, HOLE_PUNCH_PACKET_BODY_LEN).into_bytes(),
                     remote_mapped_addr.into(),
                 )
                 .await?;

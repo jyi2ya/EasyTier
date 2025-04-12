@@ -1,5 +1,17 @@
 # EasyTier
 
+---
+
+io uring: 太酷了。
+
+把运行时都调成 thread local 的了，因为 compio 的 net 库返回的东西全是 !Send !Sync 的
+
+udp 已经做好了，有点灵车，不知道会不会炸。
+
+tcp 还没做，tcp 全是 tokio::AsyncWrite 和 tokio::AsyncRead，感觉有点难搞
+
+---
+
 [![Github release](https://img.shields.io/github/v/tag/EasyTier/EasyTier)](https://github.com/EasyTier/EasyTier/releases)
 [![GitHub](https://img.shields.io/github/license/EasyTier/EasyTier)](https://github.com/EasyTier/EasyTier/blob/main/LICENSE)
 [![GitHub last commit](https://img.shields.io/github/last-commit/EasyTier/EasyTier)](https://github.com/EasyTier/EasyTier/commits/main)
